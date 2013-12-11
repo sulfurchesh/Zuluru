@@ -21,6 +21,14 @@
  */
 
 /**
+ * Ensure sufficient RAM
+ *
+ * Comment as required, and set as required. 36M seems to be sufficient for our
+ * needs at the moment.
+ */
+ini_set("memory_limit", "36M");
+
+/**
  * CakePHP Debug Level:
  *
  * Production Mode:

@@ -503,15 +503,15 @@ class SportComponent extends Object
 
 	function validate_team_score_two($stat) {
 		$ret = array();
-		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() > team_score * 2) alert_msg += 'The number of {$stat['name']} entered is more than the score.\\n';";
-		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() < team_score * 2) confirm_msg += 'The number of {$stat['name']} entered is less than the score.\\n';";
+		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() > team_score * 2) alert_msg += 'The number of {$stat['name']} entered is more than the score allows.\\n';";
+		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() < team_score * 2) confirm_msg += 'The number of {$stat['name']} entered is less than the score allows.\\n';";
 		return $ret;
 	}
 
 	function validate_opponent_score($stat) {
 		$ret = array();
-		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() > opponent_score) alert_msg += 'The number of {$stat['name']} entered is more than the score.\\n';";
-		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() < opponent_score) confirm_msg += 'The number of {$stat['name']} entered is less than the score.\\n';";
+		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() > opponent_score) alert_msg += 'The number of {$stat['name']} entered is more than the opponent score.\\n';";
+		$ret[] = "if (jQuery('#team_' + team_id + ' th.stat_{$stat['id']}').html() < opponent_score) confirm_msg += 'The number of {$stat['name']} entered is less than the opponent score.\\n';";
 		return $ret;
 	}
 }

@@ -94,6 +94,7 @@ if (!defined('TIE_BREAKER_HTH_HTHPM_PM_LOSS')) {
 	define('TIE_BREAKER_PM_HTH_GF_LOSS', 4);
 	define('TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT', 5);
 	define('TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS', 6);
+        define('TIE_BREAKER_PM_GF_HTH', 7);
 }
 
 // Minimum "fake id" to use for setting edit pages
@@ -257,6 +258,7 @@ $config['tie_breakers'] = array(
 	TIE_BREAKER_PM_HTH_GF_LOSS => array('pm', 'hth', 'gf', 'loss'),
 	TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT => array('pm', 'hth', 'gf', 'loss', 'spirit'),
 	TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS => array('spirit', 'pm', 'hth', 'gf', 'loss'),
+        TIE_BREAKER_PM_GF_HTH => array('pm', 'gf', 'hth'),
 );
 
 // MIME definitions for document types that CakePHP doesn't support
