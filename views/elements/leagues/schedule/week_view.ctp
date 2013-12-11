@@ -86,7 +86,7 @@ foreach ($division['Game'] as $game):
 	<td><?php if ($is_tournament): ?><?php echo $game['name']; ?><?php endif; ?></td>
 	<td><?php
 	$time = $this->ZuluruTime->time($game['GameSlot']['game_start']) . '-' .
-			$this->ZuluruTime->time($game['GameSlot']['display_game_end']);
+			$this->ZuluruTime->time($game['GameSlot']['display_game_end']); // XXX: Display per sport
 	echo $this->Html->link($time, array('controller' => 'games', 'action' => 'view', 'game' => $game['id']));
 	?></td>
 	<td><?php echo $this->element('fields/block', array('field' => $game['GameSlot']['Field'])); ?></td>

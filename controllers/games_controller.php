@@ -34,6 +34,10 @@ class GamesController extends AppController {
 	}
 
 	function isAuthorized() {
+                // Admin has full control (in theory)
+                if ($this->is_admin) {
+                        return true;
+                }
 		// Anyone that's logged in can perform these operations
 		if (in_array ($this->params['action'], array(
 				'ratings_table',

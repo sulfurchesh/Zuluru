@@ -24,7 +24,7 @@ if (isset ($published)) {
 <?php // TODO: Use a league element ?>
 <tr>
 	<th rowspan="2"><?php __('Team'); ?></th>
-	<th rowspan="2"><?php __('Rating'); ?></th>
+	<th rowspan="2"><?php __('Rating'); ?></th> <!-- XXX: Remove per option -->
 <?php
 $region_prefs = Configure::read('feature.region_preference');
 if ($region_prefs) :
@@ -101,7 +101,7 @@ $numteams = count ($team_count);
 $rows = array();
 foreach ($division['Team'] as $team) {
 	$id = $team['id'];
-	$row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']);
+	$row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']); // XXX: Remove rating per option
 	if ($region_prefs) {
 		if (!empty($team['Region'])) {
 			$row[] = $team['Region']['name'];
@@ -158,8 +158,8 @@ foreach ($division['Team'] as $team) {
 }
 
 // Output totals line
-$total_row = array(array(__('Total games', true), array('colspan' => 2 + $region_prefs)));
-$avg_row = array(array(__('Average', true), array('colspan' => 2 + $region_prefs)));
+$total_row = array(array(__('Total games', true), array('colspan' => 2 + $region_prefs))); // XXX: Remove rating 2->1
+$avg_row = array(array(__('Average', true), array('colspan' => 2 + $region_prefs))); // XXX: Remove rating 2->1
 $region_total = 0;
 $last_region = null;
 foreach ($facilities as $facility) {
@@ -201,7 +201,7 @@ echo $this->Html->tableCells ($rows, array(), array('class' => 'altrow'));
 if ($region_prefs) {
 	array_unshift ($heading, __('Region Preference', true));
 }
-array_unshift ($heading, __('Rating', true));
+array_unshift ($heading, __('Rating', true)); // XXX: Remove per option
 array_unshift ($heading, __('Team', true));
 $heading[] = __('Total', true);
 

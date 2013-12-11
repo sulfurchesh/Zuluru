@@ -862,7 +862,7 @@ class TeamsController extends AppController {
 				$this->redirect(array('action' => 'view', 'team' => $id));
 			}
 			$person = reset($person);
-		} else if (!$this->effective_admin && !$this->effective_coordinator && !$is_captain) {
+		} else if (!$this->effective_admin && !$this->effective_coordinator && !$is_captain && !$this->is_admin) {
 			$this->Session->setFlash(__('You do not have permission to set shirt numbers for this team.', true), 'default', array('class' => 'info'));
 			$this->redirect(array('action' => 'view', 'team' => $id));
 		}

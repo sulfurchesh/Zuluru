@@ -77,10 +77,11 @@
 		<hr noshade="noshade" />
 		<p><i>Powered by <a href="http://zuluru.org/"><?php echo ZULURU; ?></a>, version <?php echo ZULURU_MAJOR . '.' . ZULURU_MINOR . '.' . ZULURU_REVISION; ?> | <?php
 		$body = htmlspecialchars ("I found a bug in http://{$_SERVER['HTTP_HOST']}{$this->here}");
-		echo $this->Html->link('Report a bug', 'mailto:' . Configure::read('email.support_email') . '?subject=' . ZULURU . "%20Bug&body=$body") . ' on this page'; ?> | <?php
+		echo $this->Html->link('Report a problem', 'mailto:' . Configure::read('email.support_email') . '?subject=' . ZULURU . "%20Bug&body=$body"); ?>
+<!-- | <?php
 		echo $this->ZuluruHtml->iconLink('facebook.png', 'http://facebook.com/Zuluru', array(), array('target' => 'facebook')) . ' ' .
 			$this->Html->link('Follow Zuluru on Facebook', 'http://facebook.com/Zuluru', array('target' => 'facebook'));
-		?></i></p>
+		?> --></i></p>
 	</div>
 	<?php // Various Ajax bits throughout the system target this ?>
 	<div id="temp_update" style="display: none;"></div>

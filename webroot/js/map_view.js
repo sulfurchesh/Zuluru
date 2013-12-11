@@ -44,10 +44,11 @@ function drawFields()
 					'<br>Longitude: ' + Math.round(fields[id].longitude * 100000) / 100000 +
 					'<br>Surface: ' + fields[id].surface +
 					'</p>';
-		var layout = layoutText(id);
-		if (layout != null) {
-			text += '<h4>Suggested field layout:</h4>' + layout + '</p>';
-		}
+		// Non-relevant for soccer/futsal... need better way to hide
+		// var layout = layoutText(id);
+		// if (layout != null) {
+		//	text += '<h4>Suggested field layout:</h4>' + layout + '</p>';
+		//}
 		fields[id].window = new google.maps.InfoWindow({'content':text});
 
 		openOnClick(fields[id].marker, fields[id].window);

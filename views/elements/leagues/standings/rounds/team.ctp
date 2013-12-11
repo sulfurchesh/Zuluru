@@ -18,24 +18,23 @@ if (count ($classes)) {
 		}
 	?>
 	<td><?php echo $round['W']; ?></td>
-	<td><?php echo $round['L']; ?></td>
 	<td><?php echo $round['T']; ?></td>
-	<td><?php echo $round['def']; ?></td>
-	<td><?php echo $round['pts']; ?></td>
+	<td><?php echo $round['L']; ?></td>
 	<td><?php echo $round['gf']; ?></td>
 	<td><?php echo $round['ga']; ?></td>
 	<td><?php echo $round['gf'] - $round['ga']; ?></td>
+	<td><?php echo $round['pts']; ?></td>
 	<?php endif; ?>
+	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['W'] + $team['Season']['T'] + $team['Season']['L'] : '0'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['W'] : '-'); ?></td>
-	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['L'] : '-'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['T'] : '-'); ?></td>
-	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['def'] : '-'); ?></td>
-	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['pts'] : '-'); ?></td>
+	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['L'] : '-'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['gf'] : '-'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['ga'] : '-'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['gf'] - $team['Season']['ga'] : '-'); ?></td>
+	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['pts'] : '-'); ?></td>
 	<td><?php
-	if (array_key_exists('Season', $team) && $team['Season']['str'] > 1) {
+	if (array_key_exists('Season', $team) && $team['Season']['str'] > 0) { // XXX: Config as per options
 		echo $team['Season']['str'] . __($team['Season']['str_type'], true);
 	} else {
 		echo '-';

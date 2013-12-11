@@ -30,11 +30,12 @@ foreach ($dates as $date) {
 			);
 		}
 	} else {
-		$all_games[] = array(
-			'date' => $date, 'time' => '00:00:00',
-			'condition' => "game_date=$date",
-			'header' => $prefix . $this->ZuluruTime->date($date),
-		);
+		// No need to show empty weeks... waste of everyone's time.
+		// $all_games[] = array(
+		//	'date' => $date, 'time' => '00:00:00',
+		//	'condition' => "game_date=$date",
+		//	'header' => $prefix . $this->ZuluruTime->date($date),
+		// );
 	}
 }
 

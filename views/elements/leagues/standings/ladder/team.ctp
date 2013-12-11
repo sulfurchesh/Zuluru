@@ -18,7 +18,7 @@ if (count ($classes)) {
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['ga'] : '-'); ?></td>
 	<td><?php echo (array_key_exists('Season', $team) ? $team['Season']['gf'] - $team['Season']['ga'] : '-'); ?></td>
 	<td><?php
-	if (array_key_exists('Season', $team) && $team['Season']['str'] > 1) {
+	if (array_key_exists('Season', $team) && $team['Season']['str'] > 1) {  // XXX: Config as per options
 		echo $team['Season']['str'] . __($team['Season']['str_type'], true);
 	} else {
 		echo '-';

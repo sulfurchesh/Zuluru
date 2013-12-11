@@ -67,6 +67,8 @@ $config['options'] = array(
 
 	'sport'					=> make_human_options(array(
 		'ultimate',
+		'futsal',
+		'soccer',
 	)),
 
 	'surface'				=> make_human_options(array(
