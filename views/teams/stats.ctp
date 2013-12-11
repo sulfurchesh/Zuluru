@@ -17,18 +17,18 @@ $na = __('N/A', true);
 
 $has_numbers = false;
 $numbers = array_unique(Set::extract('/Person/TeamsPerson/number', $team));
-if (Configure::read('feature.shirt_numbers') && count($numbers) > 1 && $numbers[0] !== null) {
+if (Configure::read('feature.shirt_numbers') && count($numbers) >= 1 && $numbers[0] !== null) {
 	$has_numbers = true;
 }
 
 $headers = array(
 	$this->Html->tag('th', __('Name', true)),
-	$this->Html->tag('th', __('Gender', true)),
+	$this->Html->tag('th', __('Gender', true)),  // XXX: Don't show for non-coed
 );
 $totals = array(__('Total', true), '');
 if ($has_numbers) {
-	array_unshift($headers, $this->Html->tag('th', '#'));
-	array_unshift($totals, '');
+	array_unshift($headers, $this->Html->tag('th', 'Nr'));  // Option: Default to "#"?
+	array_unshift($totals, '');  // XXX: Don't show for non-coed
 }
 
 // Sort the stats into groups for display
@@ -52,7 +52,7 @@ foreach ($team['Division']['League']['StatType'] as $stat_type) {
 		if (!array_key_exists($person['id'], $tables[$stat_type['positions']]['rows'])) {
 			$tables[$stat_type['positions']]['rows'][$person['id']] = array(
 				$this->element('people/block', compact('person')),
-				__($person['gender'], true),
+				__($person['gender'], true), // XXX: Don't show for non-coed
 			);
 			if ($has_numbers) {
 				array_unshift($tables[$stat_type['positions']]['rows'][$person['id']], $person['TeamsPerson']['number']);
@@ -102,7 +102,7 @@ foreach ($tables as $positions => $table):
 
 			// Skip name and gender columns
 			array_shift($row);
-			array_shift($row);
+			array_shift($row);  // XXX: Don't shift for non-coed
 
 			while (!empty($row)) {
 				$value = array_shift($row);

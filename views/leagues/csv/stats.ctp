@@ -7,7 +7,7 @@ $header1 = array(
 
 $header2 = array(
 		__('Name', true),
-		__('Gender', true),
+		__('Gender', true), // XXX: Don't show for non-coed divisions
 );
 
 foreach ($team['Game'] as $key => $game) {
@@ -36,7 +36,7 @@ fputcsv($fp, $header2);
 foreach ($team['Person'] as $person) {
 	$data = array(
 		$person['full_name'],
-		$person['gender'],
+		$person['gender'], // XXX: Don't show for non-coed divisions
 	);
 	$person_stats = Set::extract("/Stat[person_id={$person['id']}]", $team);
 

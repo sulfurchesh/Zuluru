@@ -2,7 +2,7 @@
 $fp = fopen('php://output','w+');
 $header = array(
 		__('Name', true),
-		__('Gender', true),
+		__('Gender', true),  // XXX: Don't show for non-coed
 );
 
 foreach ($team['Division']['League']['StatType'] as $stat_type) {
@@ -13,7 +13,7 @@ fputcsv($fp, $header);
 foreach ($team['Person'] as $person) {
 	$data = array(
 		$person['full_name'],
-		$person['gender'],
+		$person['gender'],  // XXX: Don't show for non-coed
 	);
 
 	foreach ($team['Division']['League']['StatType'] as $stat_type) {

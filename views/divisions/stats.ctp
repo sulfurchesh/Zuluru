@@ -23,7 +23,7 @@ if (Configure::read('feature.shirt_numbers') && count($numbers) > 1 && $numbers[
 
 $headers = array(
 	$this->Html->tag('th', __('Name', true)),
-	$this->Html->tag('th', __('Gender', true)),
+	$this->Html->tag('th', __('Gender', true)), // XXX: don't show in non-coed
 	$this->Html->tag('th', __('Team', true)),
 );
 if ($has_numbers) {
@@ -50,7 +50,7 @@ foreach ($division['League']['StatType'] as $stat_type) {
 		if (!array_key_exists($person['Person']['id'], $tables[$stat_type['positions']]['rows'])) {
 			$tables[$stat_type['positions']]['rows'][$person['Person']['id']] = array(
 				$this->element('people/block', compact('person')),
-				__($person['Person']['gender'], true),
+				__($person['Person']['gender'], true),  // XXX: don't show in non-coed
 				$this->element('teams/block', array('team' => $person)),
 			);
 			if ($has_numbers) {
