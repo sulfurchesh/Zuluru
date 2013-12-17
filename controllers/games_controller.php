@@ -771,7 +771,7 @@ class GamesController extends AppController {
 		// Wrap the whole thing in a transaction, for safety.
 		$transaction = new DatabaseTransaction($this->Game);
 		if ($this->Game->delete($id)) {
-			if ($this->Game->GameSlot->updateAll (array('game_id' => null), array('GameSlot.id' => $game['GameSlot']['id']))) {
+			if ($this->Game->GameSlot->updateAll (array('assigned' => 0), array('GameSlot.id' => $game['GameSlot']['id']))) {
 				$this->Session->setFlash(sprintf(__('%s deleted', true), __('Game', true)), 'default', array('class' => 'success'));
 
 				// If we already have a rating, reverse the effect of this game from the
@@ -3022,13 +3022,6 @@ class GamesController extends AppController {
 				'Game.published' => true,
 				'GameSlot.game_date < CURDATE()',
 			),
-			'fields' => array(
-				'Game.id', 'Game.home_team', 'Game.home_score', 'Game.away_team', 'Game.away_score', 'Game.status', 'Game.division_id',
-				'HomePoolTeam.dependency_type', 'HomePoolTeam.dependency_id', 'AwayPoolTeam.dependency_type', 'AwayPoolTeam.dependency_id',
-				'GameSlot.game_date', 'GameSlot.game_start', 'GameSlot.game_end',
-				'HomeTeam.id', 'HomeTeam.name',
-				'AwayTeam.id', 'AwayTeam.name',
-			),
 			'contain' => array(
 				'Division' => array('Day', 'League'),
 				'GameSlot' => array('Field' => 'Facility'),
@@ -3070,13 +3063,6 @@ class GamesController extends AppController {
 				),
 				'Game.published' => true,
 				'GameSlot.game_date >= CURDATE()',
-			),
-			'fields' => array(
-				'Game.id', 'Game.home_team', 'Game.home_score', 'Game.away_team', 'Game.away_score', 'Game.status', 'Game.division_id',
-				'HomePoolTeam.dependency_type', 'HomePoolTeam.dependency_id', 'AwayPoolTeam.dependency_type', 'AwayPoolTeam.dependency_id',
-				'GameSlot.game_date', 'GameSlot.game_start', 'GameSlot.game_end',
-				'HomeTeam.id', 'HomeTeam.name',
-				'AwayTeam.id', 'AwayTeam.name',
 			),
 			'contain' => array(
 				'Division' => array('Day', 'League'),
