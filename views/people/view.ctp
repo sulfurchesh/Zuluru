@@ -213,7 +213,6 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 	</ul>
 </div>
 
-<?php if ($is_logged_in):?>
 <div class="related">
 	<h3><?php __('Teams');?></h3>
 	<?php if (!empty($teams)):?>
@@ -237,8 +236,14 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 				$positions = Configure::read('sport.positions');
 				if (!empty($positions)) {
 					echo ' (' . $this->element('people/roster_position', array('roster' => $team['TeamsPerson'], 'division' => $team['Division'])) . ')';
-				}
+				}				
 			}
+			// Let's put the stats in here, in a sub table perhaps...?
+			if (League::hasStats($team['Division']['League'])) {
+				// Need to order these by game date/time, and link to the game in each case
+				// Output: just entered stats, nothing else
+			}
+
 			?></td>
 		</tr>
 		<?php endforeach; ?>
@@ -251,10 +256,10 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 		</ul>
 	</div>
 </div>
-<?php endif; ?>
 
-<?php if (($is_admin || $is_manager || $is_me) && (!empty($relatives) || !empty($related_to))):?>
-<div class="related">
+<?php if ($is_logged_in):?>
+ <?php if (($is_admin || $is_manager || $is_me) && (!empty($relatives) || !empty($related_to))):?>
+ <div class="related">
 	<h3><?php __('Relatives');?></h3>
 	<table class="list">
 	<tr>
@@ -308,7 +313,8 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<li><?php echo $this->Html->link(__('Link a new relative', true), array('controller' => 'people', 'action' => 'add_relative')); ?> </li>
 		</ul>
 	</div>
-</div>
+ </div>
+ <?php endif; ?>
 <?php endif; ?>
 
 <?php if ($is_logged_in && Configure::read('feature.badges') && !empty($badges['Badge'])): ?>
