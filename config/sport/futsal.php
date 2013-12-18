@@ -1,5 +1,5 @@
 <?php
-$field = 'pitch';
+$field = 'court';
 
 $config['sport'] = array(
 	'field' => $field,
