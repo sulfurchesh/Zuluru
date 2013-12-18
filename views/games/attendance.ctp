@@ -17,7 +17,7 @@ $this->Html->addCrumb ($this->ZuluruTime->date($game['GameSlot']['game_date']));
 		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->Html->link($this->ZuluruTime->date($game['GameSlot']['game_date']),
 			array('action' => 'view', 'game' => $game['Game']['id'])); ?></dd>
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Game Time'); ?></dt>
-		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->ZuluruTime->time($game['GameSlot']['game_start']); ?> - <?php echo $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></dd>
+		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->ZuluruTime->time($game['GameSlot']['game_start']); ?> - <?php echo $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></dd> <!-- XXX: game_end -->
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Team'); ?></dt>
 		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->element('teams/block', array('team' => $team)); ?></dd>
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Opponent'); ?></dt>
@@ -83,8 +83,8 @@ $can_annotate = Configure::read('feature.annotations') && in_array($team['id'], 
 	<tr>
 		<th><?php __('Name'); ?></th>
 		<th><?php __('Role'); ?></th>
-		<th><?php __('Gender'); ?></th>
-		<th><?php __('Rating'); ?></th>
+		<th><?php __('Gender'); ?></th> <!-- XXX: Non-coed -->
+		<th><?php __('Rating'); ?></th> <!-- XXX: Option -->
 		<th><?php __('Attendance'); ?></th>
 		<th><?php __('Updated'); ?></th>
 	</tr>
@@ -105,8 +105,8 @@ $can_annotate = Configure::read('feature.annotations') && in_array($team['id'], 
 	<tr<?php echo $class;?>>
 		<td><?php echo $this->element('people/block', compact('person')); ?></td>
 		<td><?php __(Configure::read("options.roster_role.{$person['TeamsPerson']['role']}")); ?></td>
-		<td><?php __($person['gender']);?></td>
-		<td><?php echo $person['skill_level'];?></td>
+		<td><?php __($person['gender']);?></td> <!-- XXX: Non-coed -->
+		<td><?php echo $person['skill_level'];?></td> <!-- XXX: Option -->
 		<td class="<?php echo low($statuses[$status]);?>"><?php
 			echo $this->element('games/attendance_change', array(
 				'team' => $team,

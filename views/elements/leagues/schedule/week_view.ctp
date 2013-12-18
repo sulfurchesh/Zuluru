@@ -88,8 +88,8 @@ foreach ($division['Game'] as $game):
 	<td><?php if ($is_tournament && !$same_slot): ?><?php echo $game['name']; ?><?php endif; ?></td>
 	<td><?php
 	if (!$same_slot) {
-		$time = $this->ZuluruTime->time($game['GameSlot']['game_start']) . '-' .
-				$this->ZuluruTime->time($game['GameSlot']['display_game_end']); // XXX: Display per sport
+		$time = $this->ZuluruTime->time($game['GameSlot']['game_start']);
+				// . '-' .	$this->ZuluruTime->time($game['GameSlot']['display_game_end']); // XXX: Display per sport
 		echo $this->Html->link($time, array('controller' => 'games', 'action' => 'view', 'game' => $game['id']));
 	}
 	?></td>

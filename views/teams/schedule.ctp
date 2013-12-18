@@ -66,8 +66,8 @@ $display_spirit = ($is_admin || $is_coordinator || $team['Division']['League']['
 		<tr<?php if (!empty ($classes)) echo ' class="' . implode (' ', $classes) . '"'; ?>>
 			<td><?php echo $this->ZuluruTime->fulldate($date); ?></td>
 			<td><?php
-			$time = $this->ZuluruTime->time($start) . '-' .
-					$this->ZuluruTime->time($end);
+			$time = $this->ZuluruTime->time($start);
+			// . '-' .	$this->ZuluruTime->time($end); // XXX: Hide game ending...
 			if ($is_event) {
 				echo $this->Html->link($time, array('controller' => 'team_events', 'action' => 'view', 'event' => $game['TeamEvent']['id']));
 			} else {

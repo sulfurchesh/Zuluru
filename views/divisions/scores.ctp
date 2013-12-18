@@ -108,7 +108,7 @@ foreach ($division['Team'] as $team_id => $team) {
 						} else {
 							$game_result = "{$game['HomeTeam']['name']} and {$game['AwayTeam']['name']} tied $game_score";
 						}
-						// Hide ratings stuff...
+						// XXX: Hide ratings stuff...
 						// $game_result .= " ({$game['Game']['rating_points']} rating points transferred)";
 				}
 

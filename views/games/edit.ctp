@@ -37,9 +37,9 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('home_dependency', $game['Game'])) {
 				echo " ({$game['Game']['home_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {
-				echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";
-			}
+			if ($game['Division']['schedule_type'] != 'tournament') {							// XXX: Rating option
+				echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";	// XXX: Rating option
+			}																					// XXX: Rating option
 		}
 		?>
 
@@ -55,9 +55,9 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('away_dependency', $game['Game'])) {
 				echo " ({$game['Game']['away_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {
-				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
-			}
+			if ($game['Division']['schedule_type'] != 'tournament') {							// XXX: Rating option
+				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";	// XXX: Rating option
+			}																					// XXX: Rating option
 		}
 		?>
 
@@ -66,8 +66,8 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 		<?php
 		echo $this->ZuluruTime->date ($game['GameSlot']['game_date']) . ', ' .
-			$this->ZuluruTime->time ($game['GameSlot']['game_start']) . '-' .
-			$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);
+			$this->ZuluruTime->time ($game['GameSlot']['game_start']);
+			// . '-' .	$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);  XXX: Game_end
 		?>
 	<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Location');?></dt>
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>

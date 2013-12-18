@@ -26,12 +26,12 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('home_dependency', $game['Game'])) {
 				echo " ({$game['Game']['home_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {
-				echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";
-				if (!$preliminary && !Game::_is_finalized($game)) {
-					printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['HomeTeam']['rating'], $game['AwayTeam']['rating']) * 100, __('chance to win', true));
-				}
-			}
+			//if ($game['Division']['schedule_type'] != 'tournament') {   // XXX: Rating option
+			//	echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";
+			//	if (!$preliminary && !Game::_is_finalized($game)) {
+			//		printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['HomeTeam']['rating'], $game['AwayTeam']['rating']) * 100, __('chance to win', true));
+			//	}
+			//}
 		}
 		?>
 
@@ -47,12 +47,12 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('away_dependency', $game['Game'])) {
 				echo " ({$game['Game']['away_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {
-				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
-				if (!$preliminary && !Game::_is_finalized($game)) {
-					printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['AwayTeam']['rating'], $game['HomeTeam']['rating']) * 100, __('chance to win', true));
-				}
-			}
+			//if ($game['Division']['schedule_type'] != 'tournament') {		// XXX: Rating option
+			//	echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
+			//	if (!$preliminary && !Game::_is_finalized($game)) {
+			//		printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['AwayTeam']['rating'], $game['HomeTeam']['rating']) * 100, __('chance to win', true));
+			//	}
+			//}
 		}
 		?>
 
@@ -211,6 +211,7 @@ $team_names = array(
 			echo $this->element("leagues/game/{$league_obj->render_element}/score", compact('game'));
 		}
 		?>
+		<!-- XXX: Hide approval option
 		<dt><?php __('Score Approved By'); ?></dt>
 		<dd>
 			<?php
@@ -223,6 +224,7 @@ $team_names = array(
 			?>
 
 		</dd>
+		-->
 	</dl>
 	<?php else: ?>
 		<p><?php __('The score of this game has not yet been finalized.'); ?></p>

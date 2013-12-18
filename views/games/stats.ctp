@@ -47,8 +47,8 @@ $this->Html->addCrumb (__('Stats', true));
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 		<?php
 		echo $this->ZuluruTime->date ($game['GameSlot']['game_date']) . ', ' .
-			$this->ZuluruTime->time ($game['GameSlot']['game_start']) . '-' .
-			$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);
+			$this->ZuluruTime->time ($game['GameSlot']['game_start']);
+			// . '-' .	$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);   // XXX: Game_end
 		?>
 	</dd>
 	<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Location');?></dt>
@@ -82,10 +82,10 @@ foreach ($teams as $team):
 			$tables[$stat_type['positions']] = array(
 				'headers' => array(
 					$this->Html->tag('th', __('Name', true)),
-					$this->Html->tag('th', __('Gender', true)),
+					$this->Html->tag('th', __('Gender', true)),		// XXX: Non-coed
 				),
 				'rows' => array(),
-				'totals' => array(__('Total', true), ''),
+				'totals' => array(__('Total', true), ''),			// XXX: Non-coed
 			);
 		}
 
@@ -104,7 +104,7 @@ foreach ($teams as $team):
 			if (!array_key_exists($person['Person']['id'], $tables[$stat_type['positions']]['rows'])) {
 				$tables[$stat_type['positions']]['rows'][$person['Person']['id']] = array(
 					$this->element('people/block', compact('person')),
-					__($person['Person']['gender'], true),
+					__($person['Person']['gender'], true),		// XXX: Non-coed
 				);
 			}
 			$value = Set::extract("/Stat[stat_type_id={$stat_type['id']}]/value", $person_stats);
@@ -125,7 +125,7 @@ foreach ($teams as $team):
 			if (!array_key_exists(0, $tables[$stat_type['positions']]['rows'])) {
 				$tables[$stat_type['positions']]['rows'][0] = array(
 					__('Subs', true),
-					'',
+					'',			// XXX: Non-coed
 				);
 			}
 			$value = Set::extract("/Stat[stat_type_id={$stat_type['id']}]/value", $person_stats);

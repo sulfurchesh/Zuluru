@@ -8,7 +8,7 @@ if (isset($team_id)) {
 	$teams = array($team, $opponent);
 }
 $header[] = __('Name', true);
-$header[] = __('Gender', true);
+$header[] = __('Gender', true);		// XXX: Non-coed
 
 foreach ($game['Division']['League']['StatType'] as $stat_type) {
 	$header[] = $stat_type['name'];
@@ -25,7 +25,7 @@ foreach ($teams as $team) {
 		$person_stats = Set::extract("/Stat[person_id={$person['Person']['id']}][team_id={$team['id']}]", $game);
 
 		$data[] = $person['Person']['full_name'];
-		$data[] = $person['Person']['gender'];
+		$data[] = $person['Person']['gender'];		// XXX: Non-coed
 
 		foreach ($game['Division']['League']['StatType'] as $stat_type) {
 			$value = Set::extract("/Stat[stat_type_id={$stat_type['id']}]/value", $person_stats);

@@ -29,6 +29,14 @@
 ini_set("memory_limit", "36M");
 
 /**
+ * Lengthen execution time.
+ *
+ * This may be required for the overall league participation and stats. Time is in
+ * seconds.
+ */
+ini_set('max_execution_time', 60);
+
+/**
  * CakePHP Debug Level:
  *
  * Production Mode:
