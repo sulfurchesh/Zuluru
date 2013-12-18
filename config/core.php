@@ -253,7 +253,7 @@ Configure::write('debug', 0);
  * If you are on PHP 5.3 uncomment this line and correct your server timezone
  * to fix the date & time related errors.
  */
-	//date_default_timezone_set('UTC');
+	date_default_timezone_set('EST');
 
 /**
  *
