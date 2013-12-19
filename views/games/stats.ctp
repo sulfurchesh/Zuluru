@@ -48,7 +48,7 @@ $this->Html->addCrumb (__('Stats', true));
 		<?php
 		echo $this->ZuluruTime->date ($game['GameSlot']['game_date']) . ', ' .
 			$this->ZuluruTime->time ($game['GameSlot']['game_start']);
-			// . '-' .	$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);   // XXX: Game_end
+			// . '-' .	$this->ZuluruTime->time ($game['GameSlot']['display_game_end']);   // XXX: game_end
 		?>
 	</dd>
 	<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Location');?></dt>

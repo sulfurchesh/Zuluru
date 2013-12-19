@@ -8,7 +8,7 @@ $style = 'width:' . floor(80 / count($game['Division']['League']['StatType'])) .
 <table>
 	<tr>
 		<td>Date &amp; time:</td>
-		<td><?php echo $this->ZuluruTime->fulldatetime($game['GameSlot']['game_date'] . ' ' . $game['GameSlot']['game_start']) . ' - ' . $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></td> <!-- XXX: Game_end -->
+		<td><?php echo $this->ZuluruTime->fulldatetime($game['GameSlot']['game_date'] . ' ' . $game['GameSlot']['game_start']) . ' - ' . $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></td> <!-- XXX: game_end -->
 	</tr>
 	<tr>
 		<td>Team:</td>
