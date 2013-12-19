@@ -24,7 +24,11 @@ if (isset ($published)) {
 <?php // TODO: Use a league element ?>
 <tr>
 	<th rowspan="2"><?php __('Team'); ?></th>
-	<th rowspan="2"><?php __('Rating'); ?></th> <!-- XXX: Remove per option -->
+        <?php
+            if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+   	      echo $this->Html->tag ('th', __('Rating'), array('rowspan' => 2));
+            }
+        ?>
 <?php
 $region_prefs = Configure::read('feature.region_preference');
 if ($region_prefs) :
@@ -101,7 +105,11 @@ $numteams = count ($team_count);
 $rows = array();
 foreach ($division['Team'] as $team) {
 	$id = $team['id'];
-	$row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']); // XXX: Remove rating per option
+        if ($division['Division']['rating_calculator'] !== 'none') {    // XXX: Rating
+	  $row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']);
+        } else {
+	  $row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)));
+        }
 	if ($region_prefs) {
 		if (!empty($team['Region'])) {
 			$row[] = $team['Region']['name'];
@@ -158,8 +166,13 @@ foreach ($division['Team'] as $team) {
 }
 
 // Output totals line
-$total_row = array(array(__('Total games', true), array('colspan' => 2 + $region_prefs))); // XXX: Remove rating 2->1
-$avg_row = array(array(__('Average', true), array('colspan' => 2 + $region_prefs))); // XXX: Remove rating 2->1
+if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+  $colspan = 2;
+} else {
+  $colspan = 1;
+}
+$total_row = array(array(__('Total games', true), array('colspan' => $colspan + $region_prefs)));
+$avg_row = array(array(__('Average', true), array('colspan' => $colspan + $region_prefs))); 
 $region_total = 0;
 $last_region = null;
 foreach ($facilities as $facility) {
@@ -201,7 +214,9 @@ echo $this->Html->tableCells ($rows, array(), array('class' => 'altrow'));
 if ($region_prefs) {
 	array_unshift ($heading, __('Region Preference', true));
 }
-array_unshift ($heading, __('Rating', true)); // XXX: Remove per option
+if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+  array_unshift ($heading, __('Rating', true));
+}
 array_unshift ($heading, __('Team', true));
 $heading[] = __('Total', true);
 

@@ -109,14 +109,20 @@ foreach ($fields as $field => $options):
 
 	</dd>
 <?php endforeach; ?>
-<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Rating Calculator'); ?></dt>
-<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-	<?php
-	__(Inflector::Humanize ($division['rating_calculator']));
-	echo '&nbsp;' . $this->ZuluruHtml->help(array('action' => 'divisions', 'edit', 'rating_calculator', $division['rating_calculator']));
-	?>
 
-</dd>
+<?php
+  if ($division['rating_calculator'] !== 'none') { // XXX: Rating
+    if ($i % 2 == 0) {
+      echo $this->Html->tag('dt', __('Rating Calculator'), $class);
+    } else {
+      echo $this->Html->tag('dt', __('Rating Calculator'));
+    }
+    echo '<dd' . (($i++ % 2 == 0) ? $class : '') . '>';
+    __(Inflector::Humanize ($division['rating_calculator']));
+    echo '&nbsp;XX' . $this->ZuluruHtml->help(array('action' => 'divisions', 'edit', 'rating_calculator', $division['rating_calculator']));
+    echo '</dd>';
+  }
+?>
 <?php if ($is_admin || $is_manager || $is_coordinator): ?>
 	<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Exclude Teams'); ?></dt>
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>

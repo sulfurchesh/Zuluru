@@ -37,9 +37,10 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('home_dependency', $game['Game'])) {
 				echo " ({$game['Game']['home_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {							// XXX: Rating option
-				echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";	// XXX: Rating option
-			}																					// XXX: Rating option
+                        if (($game['Division']['rating_calculator'] !== 'none') &&     // XXX: Rating
+			    ($game['Division']['schedule_type'] != 'tournament')) {
+				echo ' (' . __('currently rated', true) . ": {$game['HomeTeam']['rating']})";
+			}
 		}
 		?>
 
@@ -55,9 +56,10 @@ $preliminary = ($game['Game']['home_team'] === null || $game['Game']['away_team'
 			if (array_key_exists ('away_dependency', $game['Game'])) {
 				echo " ({$game['Game']['away_dependency']})";
 			}
-			if ($game['Division']['schedule_type'] != 'tournament') {							// XXX: Rating option
-				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";	// XXX: Rating option
-			}																					// XXX: Rating option
+                        if (($game['Division']['rating_calculator'] !== 'none') &&     // XXX: Rating
+			    ($game['Division']['schedule_type'] != 'tournament')) {
+				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
+			}
 		}
 		?>
 
