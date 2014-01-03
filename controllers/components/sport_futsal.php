@@ -17,12 +17,13 @@ class SportFutsalComponent extends SportComponent
 
 		$m_id = $this->_stat_type_id('Minutes Played');
 		$g_id = $this->_stat_type_id('Goals Against');
+		$length = $this->game_length($stats);
 
 		foreach ($this->rosters as $team_id => $roster) {
 			foreach ($roster as $person_id => $position) {
 				$minutes = $this->_value_sum($m_id, $person_id, $stats);
 				if ($minutes) {
-					$value = round(($this->_value_sum($g_id, $person_id, $stats) * 50) / $minutes, 2);
+					$value = round(($this->_value_sum($g_id, $person_id, $stats) * $length) / $minutes, 2);
 				} else {
 					$value = 0;
 				}

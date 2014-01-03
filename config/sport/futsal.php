@@ -8,9 +8,9 @@ $config['sport'] = array(
 	'fields_cap' => Inflector::humanize(Inflector::pluralize($field)),
 
 	'roster_requirements' => array(
-		'womens'=> 8,
-		'mens'	=> 8,
-		'co-ed'	=> 8,
+		'womens'	=> 8,
+		'mens'		=> 8,
+		'co-ed'		=> 8,
 	),
 
 	'positions' => array(
@@ -26,6 +26,7 @@ $config['sport'] = array(
 	),
 
 	'rating_questions' => false,
+	'game_length' => 50,
 );
 
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));
