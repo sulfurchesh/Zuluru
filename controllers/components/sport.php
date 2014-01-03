@@ -452,6 +452,22 @@ class SportComponent extends Object
 			return 0;
 		}
 	}
+	
+	function game_length(&$stats) {
+		$this->_init_rosters($stats);
+		$default = 0;
+		if (Configure::read('sport.game_length')) {
+			$default = Configure::read('sport.game_length');
+		}
+		
+		if (!empty($data['Game']['Division']['game_length'])) {
+				$length = $data['Game']['Division']['game_length'];
+		}
+		if ($length == 0) {
+			$length = $default;
+		}
+		return $length;
+	}
 
 	/**
 	 *

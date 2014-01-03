@@ -140,6 +140,7 @@ class SportHockeyComponent extends SportComponent
 
 	function gaa_season($stat_type, &$stats) {
 		$this->_init_rosters($stats);
+		$length = $this->game_length($stats);
 
 		$m_id = $this->_stat_type_id('Minutes Played');
 		$g_id = $this->_stat_type_id('Goals Against');
@@ -148,7 +149,7 @@ class SportHockeyComponent extends SportComponent
 			foreach ($roster as $person_id => $position) {
 				$minutes = $this->_value_sum($m_id, $person_id, $stats);
 				if ($minutes) {
-					$value = round(($this->_value_sum($g_id, $person_id, $stats) * 60) / $minutes, 2);
+					$value = round(($this->_value_sum($g_id, $person_id, $stats) * $length) / $minutes, 2);
 				} else {
 					$value = 0;
 				}

@@ -39,6 +39,8 @@ class SportBaseballComponent extends SportComponent
 		$positions = explode(',', $positions[0]);
 
 		$this->_init_rosters($stats);
+		$length = $this->game_length($stats);
+
 		foreach ($this->rosters as $roster) {
 			foreach ($roster as $person_id => $position) {
 				$innings = Set::extract("/Stat[stat_type_id=$ip_id][person_id=$person_id]/value", $stats);
@@ -47,7 +49,7 @@ class SportBaseballComponent extends SportComponent
 				} else {
 					$outs = $this->outs($innings);
 					$ip = $outs / 3;
-					$value = sprintf('%.02f', $this->_value_sum($er_id, $person_id, $stats) * 9 / $ip);
+					$value = sprintf('%.02f', $this->_value_sum($er_id, $person_id, $stats) * $length / $ip);
 				}
 				if (Stat::applicable($stat_type, $position) || $value != 'N/A') {
 					$stats['Calculated'][$person_id][$stat_type['id']] = $value;

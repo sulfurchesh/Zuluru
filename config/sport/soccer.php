@@ -42,6 +42,7 @@ $config['sport'] = array(
 	),
 
 	'rating_questions' => false,
+	'game_length' => 90,
 );
 
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));

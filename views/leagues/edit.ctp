@@ -122,6 +122,12 @@ $collapse = !empty($this->data['Division']['id']);
 			'empty' => '---',
 			'after' => $this->Html->para (null, __('Day, or days, on which this division will play.', true)),
 		));
+		echo $this->ZuluruForm->input('Division.game_length', array(
+			'div' => 'input advanced',
+			'size' => 5,
+			'default' => Configure::read('sport.game_length'),
+			'after' => $this->Html->para (null, __('Length of game. Typically in minutes, but innings for baseball.', true)),
+		));
 		echo $this->ZuluruForm->input('Division.ratio', array(
 			'label' => __('Gender Ratio', true),
 			'options' => Configure::read('sport.ratio'),
