@@ -260,7 +260,7 @@ class LeagueTypeComponent extends Object
 		if ($default) {
 			++ $results[$team]['def'];
 			++ $results[$team]['rounds'][$round]['def'];
-			-- $points;
+			$points += $this->sport_obj->forfeitValue();
 		}
 
 		// Add the current game

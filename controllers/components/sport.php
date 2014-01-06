@@ -40,6 +40,10 @@ class SportComponent extends Object
 		return 0;
 	}
 
+	function forfeitValue() {
+		return -1;
+	}
+	
 	function _init_rosters($stats) {
 		if ($this->rosters) {
 			return;

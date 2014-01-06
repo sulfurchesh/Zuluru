@@ -11,7 +11,11 @@ class SportFutsalComponent extends SportComponent
 	function winValue() {
 		return 3;
 	}
-
+	
+	function forfeitValue() {
+		return 0;
+	}
+	
 	function gaa_season($stat_type, &$stats) {
 		$this->_init_rosters($stats);
 
