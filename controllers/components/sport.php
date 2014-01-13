@@ -460,12 +460,15 @@ class SportComponent extends Object
 	function game_length(&$stats) {
 		$this->_init_rosters($stats);
 		$default = 0;
+		$length = 0;
 		if (Configure::read('sport.game_length')) {
 			$default = Configure::read('sport.game_length');
 		}
-		
-		if (!empty($data['Game']['Division']['game_length'])) {
-				$length = $data['Game']['Division']['game_length'];
+	
+	    $division = $this->Division->Game($this->field('division_id', array('Game.id' => $id)));
+	
+		if (!empty($division['Division']['game_length'])) {
+				$length = $division['Division']['game_length'];
 		}
 		if ($length == 0) {
 			$length = $default;

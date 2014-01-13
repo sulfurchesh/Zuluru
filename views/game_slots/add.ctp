@@ -11,9 +11,9 @@ $this->Html->addCrumb (__('Create', true));
 	<fieldset>
  		<legend><?php
 		printf(__('Add %s', true), __('Game Slots', true));
- 		if (isset ($field)) {
- 			echo ': ' . $field['Field']['long_name'];
- 		}
+		if (isset ($field)) {
+			echo ': ' . $field['Field']['long_name'];
+		}
 		?></legend>
 <?php
 if (isset ($field)) {

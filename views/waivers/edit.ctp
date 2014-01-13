@@ -12,6 +12,7 @@ if (isset ($add)) {
 <?php echo $this->Form->create('Waiver', array('url' => Router::normalize($this->here))); ?>
 	<fieldset>
  		<legend><?php printf(__(isset($add) ? 'Create %s' : 'Edit %s', true), __('Waiver', true)); ?></legend>
+ 		<legend><?php printf(__(isset($add) ? 'Create %s' : 'Edit %s', true), __('Waiver', true)); ?></legend>
 	<?php
 		if (!isset($add)) {
 			echo $this->Form->input('id');

@@ -15,12 +15,12 @@ $this->Html->addCrumb ($badge['Badge']['name']);
 
 <div class="badges form">
 	<fieldset>
- 		<legend><?php
- 		if ($badge['Badge']['category'] == 'assigned') {
- 			__('Assign a Badge');
- 		} else {
- 			__('Nominate for a Badge');
- 		}
+		<legend><?php
+		if ($badge['Badge']['category'] == 'assigned') {
+			__('Assign a Badge');
+		} else {
+			__('Nominate for a Badge');
+		}
 		echo ': ';
 		if (count($affiliates) > 1) {
 			echo "{$badge['Affiliate']['name']} ";

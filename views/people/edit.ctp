@@ -18,7 +18,7 @@ $sport = reset(array_keys(Configure::read('options.sport')));
 <div class="people form">
 <h2><?php
 if (!empty($this->data['Upload']) && $this->data['Upload']['approved'] == true) {
-	echo $this->element('people/player_photo', array('person' => $this->data['Person'], 'upload' => $this->data['Upload']));
+	echo $this->element('people/player_photo', array('person' => $this->data['Person'], 'photo' => $this->data));
 }
 echo $is_me ? __('Edit Your Profile', true) : "{$this->data['Person']['first_name']} {$this->data['Person']['last_name']}"; ?></h2>
 <p>Note that email and phone publish settings below only apply to regular players. Captains will always have access to view the phone numbers and email addresses of their confirmed players. All Team Captains will also have their email address viewable by other players.</p>
@@ -65,23 +65,12 @@ echo $is_me ? __('Edit Your Profile', true) : "{$this->data['Person']['first_nam
 				'after' => $this->Html->para (null, __('To prevent system abuses, this can only be changed by an administrator. To change this, please email your new name to ', true) . $this->Html->link ($admin, "mailto:$admin") . '.', true),
 			));
 		}
-		if (!Configure::read('feature.manage_accounts')) {
-			$username_edit = sprintf (Configure::read('urls.username_edit'), $id);
-			if ($username_edit) {
-				$username_link = $this->Html->link (Configure::read('feature.manage_name') . ' ' . __('username', true), $username_edit);
-				echo $this->ZuluruForm->input('user_name', array(
-					'disabled' => 'true',
-					'after' => $this->Html->para (null, __('To change this, edit your', true) . ' ' . $username_link),
-					));
-			} else {
-				echo $this->ZuluruForm->input('user_name', array(
-					'disabled' => 'true',
-					'after' => $this->Html->para (null, __('To change this, please email your existing user name and preferred new user name to ', true) . $this->Html->link ($admin, "mailto:$admin") . '.'),
-				));
-			}
-		} else {
-			echo $this->ZuluruForm->input('user_name');
-		}
+
+		echo $this->ZuluruForm->hidden("$user_model.$id_field");
+		echo $this->ZuluruForm->input("$user_model.$user_field", array(
+			'label' => __('User Name', true),
+		));
+
 		if (in_array (Configure::read('profile.gender'), $access)) {
 			echo $this->ZuluruForm->input('gender', array(
 				'type' => 'select',
@@ -125,19 +114,24 @@ echo $is_me ? __('Edit Your Profile', true) : "{$this->data['Person']['first_nam
 	<fieldset>
  		<legend><?php __('Online Contact'); ?></legend>
 	<?php
-		if (!Configure::read('feature.manage_accounts')) {
-			$profile_edit = sprintf (Configure::read('urls.profile_edit'), $id);
-			$profile_link = $this->Html->link (Configure::read('feature.manage_name') . ' ' . __('profile', true), $profile_edit);
-			echo $this->ZuluruForm->input('email', array(
-				'disabled' => 'true',
-				'after' => $this->Html->para (null, __('To change this, edit your', true) . ' ' . $profile_link),
-			));
-		} else {
-			echo $this->ZuluruForm->input('email');
-		}
+		echo $this->ZuluruForm->input("$user_model.$email_field", array(
+			'label' => __('Email', true),
+		));
+
 		echo $this->ZuluruForm->input('publish_email', array(
 			'label' => __('Allow other players to view my email address', true),
 		));
+		if (Configure::read('feature.gravatar')) {
+			if (Configure::read('feature.photos')) {
+				$after = 'You can have an image shown on your account by uploading a photo directly, or by enabling this setting and then create a <a href="http://www.gravatar.com">gravatar.com</a> account using the email address you\'ve associated with your %s account.';
+			} else {
+				$after = 'You can have an image shown on your account if you enable this setting and then create a <a href="http://www.gravatar.com">gravatar.com</a> account using the email address you\'ve associated with your %s account.';
+			}
+			echo $this->ZuluruForm->input('show_gravatar', array(
+				'label' => __('Show Gravatar image for your account?', true),
+				'after' => $this->Html->para (null, sprintf(__($after, true), Configure::read('organization.short_name'))),
+			));
+		}
 	?>
 	</fieldset>
 	<?php if (Configure::read('profile.addr_street') || Configure::read('profile.addr_city') ||
@@ -204,7 +198,7 @@ echo $is_me ? __('Edit Your Profile', true) : "{$this->data['Person']['first_nam
 			$fields = __(Configure::read('ui.fields'), true);
 			echo $this->ZuluruForm->input('addr_postalcode', array(
 				'label' => __('Postal Code', true),
-				'after' => $this->Html->para (null, sprintf(__("Please enter a correct postal code matching the address above. $short uses this information to help locate new %s near its members.", true), $fields)),
+				'after' => $this->Html->para (null, sprintf(__("Please enter a correct postal code matching the address above. %s uses this information to help locate new %s near its members.", true), $short, $fields)),
 			));
 		} else if (Configure::read('profile.addr_postalcode')) {
 			echo $this->ZuluruForm->input('addr_postalcode', array(
@@ -219,14 +213,14 @@ echo $is_me ? __('Edit Your Profile', true) : "{$this->data['Person']['first_nam
 	<?php if (Configure::read('profile.home_phone') || Configure::read('profile.work_phone') ||
 				Configure::read('profile.mobile_phone')): ?>
 	<fieldset>
- 		<legend><?php
- 		if (Configure::read('profile.home_phone') + Configure::read('profile.work_phone') +
- 			Configure::read('profile.mobile_phone') > 1)
- 		{
- 			$number = 'Numbers';
- 		} else {
- 			$number = 'Number';
- 		}
+		<legend><?php
+		if (Configure::read('profile.home_phone') + Configure::read('profile.work_phone') +
+			Configure::read('profile.mobile_phone') > 1)
+		{
+			$number = 'Numbers';
+		} else {
+			$number = 'Number';
+		}
 		__("Telephone $number");
 		?></legend>
 	<?php

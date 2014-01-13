@@ -232,7 +232,7 @@ class LeaguesController extends AppController {
 		}
 
 		$this->League->contain (array(
-			'Division' => array('Team' => array('Person')),
+			'Division' => array('Team' => array('Person' => $this->Auth->authenticate->name)),
 		));
 		$league = $this->League->read(null, $id);
 		if (!$league) {
@@ -526,8 +526,6 @@ class LeaguesController extends AppController {
 		if (!empty($to_open)) {
 			$this->League->updateAll (array('League.is_open' => true), array('League.id' => Set::extract('/League/id', $to_open)));
 		}
-
-		$this->Lock->unlock();
 	}
 }
 ?>
