@@ -88,7 +88,7 @@ $config['urls'] = array(
 $config['security'] = array(
 	// Which model do we use for user authentication? Use 'User' if you're not sure.
 	'auth_model'		=> 'User',
-	
+
 	// If you are using a third-party user database, you may need to add more parameters
 	// here. See the comments in the model file specified by auth_model above for details.
 

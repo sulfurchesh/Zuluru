@@ -1196,7 +1196,7 @@ class TeamsController extends AppController {
 
 	function note() {
 		$id = $this->_arg('team');
-		$my_id = $this->Auth->user('id');
+		$my_id = $this->Auth->user('zuluru_person_id');
 
 		if (!$id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('team', true)), 'default', array('class' => 'info'));
@@ -1632,7 +1632,7 @@ class TeamsController extends AppController {
 					'TeamsPerson.role', 'Person.gender DESC', 'Person.last_name', 'Person.first_name',
 				),
 				'conditions' => array(
-					'Person.id !=' => $this->Auth->User('zuluru_person_id'),
+					'Person.id !=' => $this->Auth->user('zuluru_person_id'),
 					'TeamsPerson.status' => ROSTER_APPROVED,
 				),
 				$this->Auth->authenticate->name,
@@ -1694,7 +1694,7 @@ class TeamsController extends AppController {
 				'order' => 'Team.id desc',
 			),
 		));
-		$teams = $this->Team->Person->read(null, $this->Auth->User('zuluru_person_id'));
+		$teams = $this->Team->Person->read(null, $this->Auth->user('zuluru_person_id'));
 		// Only show teams from divisions that have some schedule type
 		// TODO: May need to change this once we can schedule playoffs
 		$teams = Set::extract("/Division[id!={$team['Team']['division_id']}][schedule_type!=none]/..", $teams['Team']);
@@ -2933,7 +2933,7 @@ class TeamsController extends AppController {
 									),
 								),
 								'fields' => array(
-									'Division.id', 'Division.name', 'Division.open', 'Division.ratio', 'Division.roster_deadline',
+									'Division.id', 'Division.name', 'Division.open', 'Division.ratio', 'Division.roster_deadline', 'Division.close',
 								),
 							),
 							'Person' => array(

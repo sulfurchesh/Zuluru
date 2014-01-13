@@ -116,7 +116,7 @@ class UsersController extends AppController {
 
 					// There may be callbacks to handle
 					// TODO: How to handle this in conjunction with third-party auth systems?
-					$this->data['Person']['id'] = $this->User->id;
+					$this->data['Person']['id'] = $this->Person->id;
 					$components = Configure::read('callbacks.user');
 					foreach ($components as $name => $config) {
 						$component = $this->_getComponent('User', $name, $this, false, $config);
@@ -144,7 +144,6 @@ class UsersController extends AppController {
 				'user_field' => $this->Auth->authenticate->userField,
 				'email_field' => $this->Auth->authenticate->emailField,
 		));
-	
 	}
 
 	function change_password() {
@@ -217,6 +216,7 @@ class UsersController extends AppController {
 					$this->Person->contain($user_model);
 					$matches = $this->Person->find ('all', array(
 							'conditions' => $this->data[$user_model],
+					));
 					switch (count($matches)) {
 						case 0:
 							$this->Session->setFlash(__('No matching accounts were found!', true), 'default', array('class' => 'info'));
@@ -267,6 +267,7 @@ class UsersController extends AppController {
 				)
 		));
 		if ($this->Person->$user_model->saveField($this->Auth->authenticate->pwdField, $hashed[$this->Auth->authenticate->alias][$this->Auth->authenticate->pwdField])) {
+			$this->set ($user);
 			$this->set (compact('password'));
 			return $this->_sendMail (array (
 					'to' => $user['email_formatted'],

@@ -53,6 +53,7 @@ class UserJoomla extends User {
 		//	define('JPATH_BASE', Configure::read('security.jpath_base'));
 		//	require_once JPATH_BASE . '/configuration.php';
 		//}
+
 		$config = new JConfig;
 		$this->useTable = $config->dbprefix . 'users';
 

@@ -1021,6 +1021,7 @@ class LeagueTypeTournamentComponent extends LeagueTypeComponent
 				if ($game_slot_id === false) {
 					return false;
 				}
+
 				$this->games[$key]['game_slot_id'] = $game_slot_id;
 			}
 		}

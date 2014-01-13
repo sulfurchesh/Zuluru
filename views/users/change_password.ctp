@@ -7,7 +7,7 @@ $this->Html->addCrumb (__('Change Password', true));
 <div class="users form">
 <?php echo $this->Form->create($user_model, array('url' => Router::normalize($this->here)));?>
 	<fieldset>
- 		<legend><?php echo __('Change Password for', true) . ' ' . $user['Person']['full_name']; ?></legend>
+		<legend><?php echo __('Change Password for', true) . ' ' . $user['Person']['full_name']; ?></legend>
 	<?php
 		echo $this->Form->input($id_field);
 		if (!$is_admin || $is_me)

@@ -100,7 +100,6 @@ class PeopleController extends AppController {
 
 		$user_model = $this->Auth->authenticate->name;
 		$id_field = $this->Auth->authenticate->primaryKey;
-
 		$this->paginate = array(
 				'conditions' => array(
 					'Affiliate.id' => $affiliates
@@ -885,7 +884,7 @@ class PeopleController extends AppController {
 				$this->data = array_merge($this->data, $upload);
 			}
 		}
-		
+
 		$this->set(array(
 				'user_model' => $this->Auth->authenticate->name,
 				'id_field' => $this->Auth->authenticate->primaryKey,
@@ -969,7 +968,7 @@ class PeopleController extends AppController {
 
 	function preferences() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('id');
+		$my_id = $this->Auth->user('zuluru_person_id');
 
 		if (!$id) {
 			$id = $my_id;
@@ -1152,7 +1151,7 @@ class PeopleController extends AppController {
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}
 		} else {
-			if (!$this->is_admin && $person_id != $this->Auth->user('id')) {
+			if (!$this->is_admin && $person_id != $this->Auth->user('zuluru_person_id')) {
 				$this->Session->setFlash(__('You are not allowed to remove this relation.', true), 'default', array('class' => 'warning'));
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}

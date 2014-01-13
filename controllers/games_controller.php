@@ -969,6 +969,7 @@ class GamesController extends AppController {
 		} else {
 			$this->Game->Attendance->contain(array(
 				'Person' => array(
+					$this->Auth->authenticate->name,
 					'Team' => array(
 						'conditions' => array('team_id' => $team_id),
 					),
@@ -2312,6 +2313,7 @@ class GamesController extends AppController {
 				// know that it's an update instead of a new incident.
 				if (Configure::read('scoring.incident_reports') && $this->data['Game']['incident']) {
 					$addr = Configure::read('email.incident_report_email');
+					$incident = $this->data['Incident'][$team_id];
 					$this->set(array(
 							'incident' => $incident,
 							'game' => $game['Game'],
@@ -2321,7 +2323,6 @@ class GamesController extends AppController {
 							'home_team' => $game['HomeTeam'],
 							'away_team' => $game['AwayTeam'],
 					));
-					$this->set(compact ('game', 'incident'));
 					if ($this->_sendMail (array (
 							'to' => "Incident Manager <$addr>",
 							'from' => $this->UserCache->read('Person.email_formatted'),

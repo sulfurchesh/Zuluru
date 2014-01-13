@@ -511,7 +511,6 @@ class RegistrationsController extends AppController {
 		$this->Registration->Person->contain($this->Auth->authenticate->name);
 		$person = $this->Registration->Person->read (null, $this->Auth->user('zuluru_person_id'));
 
-
 		$full = array();
 		$affiliate = $this->_arg('affiliate');
 		foreach ($registrations as $key => $registration) {

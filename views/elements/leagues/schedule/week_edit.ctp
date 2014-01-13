@@ -23,7 +23,7 @@ natcasesort ($teams);
 	<th colspan="2"><?php printf(__('Time/%s', true), __(Configure::read('sport.field_cap'), true)); ?></th>
 	<th><?php __($division['Division']['schedule_type'] == 'competition' ? 'Team' : 'Home'); ?></th>
 	<?php if ($division['Division']['schedule_type'] != 'competition'): ?>
- 	<th><?php __('Away'); ?></th>
+	<th><?php __('Away'); ?></th>
 	<?php endif; ?>
 	<th></th>
 </tr>

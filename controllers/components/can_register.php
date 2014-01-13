@@ -1,10 +1,10 @@
 <?php
 class CanRegisterComponent extends Object
 {
- 	// Cached versions of some data, for when we call test() again and again
- 	var $person = null;
- 	var $person_id = null;
- 	var $person_duplicates = null;
+	// Cached versions of some data, for when we call test() again and again
+	var $person = null;
+	var $person_id = null;
+	var $person_duplicates = null;
 
 	function initialize(&$controller, $settings = array()) {
 		// Save the controller reference for later use
@@ -34,7 +34,7 @@ class CanRegisterComponent extends Object
 
 		if ($person_id != $this->person_id) {
 			$this->person_id = $person_id;
-			$person = array(
+			$this->person = array(
 				'Person' => $this->_controller->UserCache->read('Person', $person_id),
 				'Team' => $this->_controller->UserCache->read('Teams', $person_id),
 				'Preregistration' => $this->_controller->UserCache->read('Preregistrations', $person_id),

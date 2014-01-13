@@ -15,7 +15,7 @@ $this->Html->addCrumb ($person['Person']['full_name']);
 <div class="badges form">
 <?php echo $this->Form->create('BadgesPerson', array('url' => Router::normalize($this->here)));?>
 	<fieldset>
- 		<legend><?php
+		<legend><?php
 		if (count($affiliates) > 1) {
 			echo "{$badge['Affiliate']['name']} ";
 		}

@@ -1256,7 +1256,7 @@ class LeagueTypeComponent extends Object
 				$slots = Set::extract('/GameSlot/id', $slots);
 			}
 
-			if (empty ($slots) && $away['region_preference']) {
+			if (empty ($slots) && isset($away) && $away['region_preference']) {
 				$slots = $this->matchingSlots("/Field/Facility[region_id={$away['region_preference']}]", '../..', $match_dates, $remaining);
 				$slots = Set::extract('/GameSlot/id', $slots);
 			}

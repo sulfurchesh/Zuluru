@@ -74,7 +74,7 @@ class ZuluruGameHelper extends Helper {
 				} else {
 					if ($division['schedule_type'] == 'competition') {
 						echo $score_entry['score_for'];
- 					} else {
+					} else {
 						// If scores are being shown from a particular team's perspective,
 						// we may need to swap the home and away scores.
 						if ($show_score_for_team == $score_entry['team_id'] ||
@@ -97,16 +97,16 @@ class ZuluruGameHelper extends Helper {
 								array('controller' => 'games', 'action' => 'live_score', 'game' => $details['id'], 'team' => $team_id));
 					} else {
 						$links[] = $this->Html->link(
-							__('Edit score', true),
-							array('controller' => 'games', 'action' => 'submit_score', 'game' => $details['id'], 'team' => $team_id));
+								__('Edit score', true),
+								array('controller' => 'games', 'action' => 'submit_score', 'game' => $details['id'], 'team' => $team_id));
 					}
 
 					// Check if someone is a captain on both teams that played each other
 					$second_team_id = array_pop ($teams);
 					if ($second_team_id) {
 						$links[] = $this->Html->link(
-							__('Submit', true),
-							array('controller' => 'games', 'action' => 'submit_score', 'game' => $details['id'], 'team' => $second_team_id));
+								__('Submit', true),
+								array('controller' => 'games', 'action' => 'submit_score', 'game' => $details['id'], 'team' => $second_team_id));
 					}
 				} else if ($is_volunteer) {
 					// Allow specified individuals (referees, umpires, volunteers) to live score without a team id
@@ -116,8 +116,8 @@ class ZuluruGameHelper extends Helper {
 								array('controller' => 'games', 'action' => 'live_score', 'game' => $details['id']));
 					} else {
 						$links[] = $this->Html->link(
-							__('Edit score', true),
-							array('controller' => 'games', 'action' => 'edit', 'game' => $details['id']));
+								__('Edit score', true),
+								array('controller' => 'games', 'action' => 'edit', 'game' => $details['id']));
 					}
 				}
 
@@ -173,8 +173,8 @@ class ZuluruGameHelper extends Helper {
 		// Give admins, managers and coordinators the option to edit games
 		if ($is_admin || $is_manager || $is_coordinator) {
 			$links[] = $this->ZuluruHtml->iconLink('edit_24.png',
-				array('controller' => 'games', 'action' => 'edit', 'game' => $details['id'], 'return' => true),
-				array('alt' => __('Edit', true), 'title' => __('Edit', true)));
+					array('controller' => 'games', 'action' => 'edit', 'game' => $details['id'], 'return' => true),
+					array('alt' => __('Edit', true), 'title' => __('Edit', true)));
 		}
 
 		echo $this->Html->tag('span', implode('', $links), array('class' => 'actions'));

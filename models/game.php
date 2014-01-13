@@ -618,7 +618,7 @@ class Game extends AppModel {
 		// There may be other attendance records from people that are no longer on the roster
 		$this->Attendance->contain (array(
 			'Person' => array(
-				Configure::read('security.auth_model'),
+				Configure::read('security.auth_model'),				
 				'fields' => array(
 					'Person.id', 'Person.first_name', 'Person.last_name', 'Person.gender', 'Person.skill_level',
 				),

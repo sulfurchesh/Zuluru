@@ -68,7 +68,7 @@ foreach ($division['Game'] as $game) {
 	<th><?php __(Configure::read('sport.field_cap')); ?></th>
 	<th><?php __($division['Division']['schedule_type'] == 'competition' ? 'Team' : 'Home'); ?></th>
 	<?php if ($division['Division']['schedule_type'] != 'competition'): ?>
- 	<th><?php __('Away'); ?></th>
+	<th><?php __('Away'); ?></th>
 	<?php endif; ?>
 	<th><?php __('Score'); ?></th>
 </tr>
@@ -90,8 +90,8 @@ foreach ($division['Game'] as $game):
 	<td><?php if ($is_tournament && !$same_slot): ?><?php echo $game['name']; ?><?php endif; ?></td>
 	<td><?php
 	if (!$same_slot) {
-		$time = $this->ZuluruTime->time($game['GameSlot']['game_start']);
-				// . '-' .	$this->ZuluruTime->time($game['GameSlot']['display_game_end']); // XXX: game_end
+		$time = $this->ZuluruTime->time($game['GameSlot']['game_start'])
+//				. '-' .	$this->ZuluruTime->time($game['GameSlot']['display_game_end']);
 		echo $this->Html->link($time, array('controller' => 'games', 'action' => 'view', 'game' => $game['id']));
 	}
 	?></td>

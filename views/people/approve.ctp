@@ -134,7 +134,6 @@ if (!empty ($duplicates)) {
 		}
 	}
 	echo $this->Html->nestedList ($compare);
-
 }
 
 echo '<br>';

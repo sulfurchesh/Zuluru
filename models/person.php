@@ -1,5 +1,4 @@
 <?php
-
 class Person extends AppModel {
 	var $name = 'Person';
 	var $useTable = 'people';
@@ -407,7 +406,7 @@ class Person extends AppModel {
 		$this->create();
 		return $this->save($save);
 	}
-	
+
 	function findDuplicates($person) {
 		if (array_key_exists('AffiliatePerson', $person)) {
 			$affiliate = $person['AffiliatePerson']['affiliate_id'];

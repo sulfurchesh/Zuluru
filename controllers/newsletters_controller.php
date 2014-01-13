@@ -255,7 +255,7 @@ class NewslettersController extends AppController {
 				$sent_ids = Set::extract('/Delivery/person_id', $newsletter);
 				$unsubscribed_ids = Set::extract('/MailingList/Subscription/person_id', $newsletter);
 				$people = array_diff($people, $sent_ids, $unsubscribed_ids);
-				
+
 				$user_model = $this->Auth->authenticate->name;
 				$email_field = $this->Auth->authenticate->emailField;
 				$people = $this->Person->find('all', array(

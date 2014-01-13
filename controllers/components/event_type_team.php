@@ -235,7 +235,7 @@ class EventTypeTeamComponent extends EventTypeComponent
 				'open_roster' => OPEN_ROSTER,
 				'track_attendance' => TRACK_ATTENDANCE,
 			)),
-			$league_obj->newTeam();
+			$league_obj->newTeam()
 		);
 		if (Configure::read('feature.attendance') && !empty($team['track_attendance'])) {
 			// Add some default values, chosen based on averages found in the TUC database so far

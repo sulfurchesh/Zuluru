@@ -69,6 +69,8 @@ $this->Html->addCrumb (__('View', true));
 		$count = array_fill_keys(array_keys($statuses), array('Male' => 0, 'Female' => 0));
 		foreach ($attendance['Attendance'] as $record) {
 			$person = reset(Set::extract("/Team/Person[id={$record['person_id']}]/.", $event));
+			if (empty($person))
+				continue;
 			$status = $record['status'];
 			++$count[$status][$person['gender']];
 		}

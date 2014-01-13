@@ -320,7 +320,7 @@ class UserCacheComponent extends Object
 				case 'User':
 					$self->read('Person', $id, true);
 					break;
-				
+
 				case 'Waivers':
 					if (!isset($self->_controller->Waiver)) {
 						$self->_controller->Waiver = ClassRegistry::init('Waiver');
