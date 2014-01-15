@@ -20,14 +20,19 @@ foreach ($spirit_obj->questions as $question => $detail) {
 		$questions[] = $question;
 	}
 }
+if (Configure::read('scoring.missing_score_spirit_penalty')) {
+	$questions[] = 'score_entry_penalty';
+}
 
 $defaulted_entry = array(
 	'entered_sotg' => '',
 	'assigned_sotg' => '',
+	'score_entry_penalty' => '',
 );
 $automatic_entry = array(
 	'entered_sotg' => $spirit_obj->max(),
 	'assigned_sotg' => $spirit_obj->max(),
+	'score_entry_penalty' => '',
 );
 foreach ($spirit_obj->questions as $question => $detail) {
 	$defaulted_entry[$question] = '';
@@ -84,6 +89,9 @@ foreach ($team_records as $id => $team) {
 		if ($division['League']['sotg_questions'] != 'none') {
 			$team_records[$id]['summary']['assigned_sotg'] /= $team['games'];
 		}
+		if (Configure::read('scoring.missing_score_spirit_penalty')) {
+			$team_records[$id]['summary']['score_entry_penalty'] /= $team['games'];
+		}
 	}
 }
 
@@ -127,6 +135,9 @@ foreach ($spirit_obj->questions as $question => $detail) {
 		$header[] = $detail['name'];
 	}
 }
+if (Configure::read('scoring.missing_score_spirit_penalty')) {
+	$header[] = __('Score Submitted?', true);
+}
 
 $rows = $overall = array();
 foreach ($team_records as $team) {
@@ -168,6 +179,18 @@ foreach ($team_records as $team) {
 			$overall[$question][] = $team['summary'][$question] / $team['games'];
 		}
 	}
+
+	if (Configure::read('scoring.missing_score_spirit_penalty')) {
+		$row[] = $this->element ('spirit/symbol', array(
+				'spirit_obj' => $spirit_obj,
+				'league' => $division['League'],
+				'question' => 'score_entry_penalty',
+				'is_coordinator' => true,
+				'value' => $team['summary']['score_entry_penalty'],
+		));
+		$overall['score_entry_penalty'][] = $team['summary']['score_entry_penalty'];
+	}
+
 	$rows[] = $row;
 }
 
@@ -238,22 +261,50 @@ foreach ($spirit_obj->questions as $detail) {
 	}
 }
 
+if (Configure::read('scoring.missing_score_spirit_penalty')) {
+	$header[] = __('Score Submitted?', true);
+}
+
+$colcount = count($header);
+$date = null;
+
 $rows = array();
 foreach ($division['Game'] as $game) {
+	if ($date != $game['GameSlot']['game_date']) {
+		$date = $game['GameSlot']['game_date'];
+		$date_row = array(
+				array($this->Html->tag('h3', $this->ZuluruTime->date ($game['GameSlot']['game_date'])), array('colspan' => $colcount)),
+		);
+	}
+
 	foreach (array('HomeTeam' => 'AwayTeam', 'AwayTeam' => 'HomeTeam') as $team => $opp) {
 		foreach ($game['SpiritEntry'] as $entry) {
+			if ($date_row) {
+				$rows[] = $date_row;
+				$date_row = null;
+			}
+
 			if ($entry['created_team_id'] == $game[$team]['id']) {
 				$row = array(
-						$this->Html->link ($game['Game']['id'], array('controller' => 'games', 'action' => 'view', 'game' => $game['Game']['id'])) . ' ' .
-							$this->ZuluruTime->date ($game['GameSlot']['game_date']),
+						$this->Html->link ($game['Game']['id'], array('controller' => 'games', 'action' => 'view', 'game' => $game['Game']['id'])),
 						$this->element('teams/block', array('team' => $game[$team], 'show_shirt' => false)),
 						$this->element('teams/block', array('team' => $game[$opp], 'show_shirt' => false)),
 				);
 				if ($division['League']['numeric_sotg']) {
-					$row[] = $entry['entered_sotg'];
+					$row[] = $this->element ('spirit/symbol', array(
+							'spirit_obj' => $spirit_obj,
+							'league' => $division['League'],
+							'is_coordinator' => true,	// only ones allowed to even run this report
+							'value' => $entry['entered_sotg'],
+					));
 				}
 				if ($division['League']['sotg_questions'] != 'none') {
-					$row[] = $spirit_obj->calculate($entry);
+					$row[] = $this->element ('spirit/symbol', array(
+							'spirit_obj' => $spirit_obj,
+							'league' => $division['League'],
+							'is_coordinator' => true,	// only ones allowed to even run this report
+							'value' => $spirit_obj->calculate($entry),
+					));
 				}
 				foreach ($spirit_obj->questions as $question => $detail) {
 					if ($detail['type'] != 'text') {
@@ -266,8 +317,16 @@ foreach ($division['Game'] as $game) {
 						));
 					}
 				}
+				if (Configure::read('scoring.missing_score_spirit_penalty')) {
+					$row[] = $this->element ('spirit/symbol', array(
+							'spirit_obj' => $spirit_obj,
+							'league' => $division['League'],
+							'question' => 'score_entry_penalty',
+							'is_coordinator' => true,	// only ones allowed to even run this report
+							'value' => $entry['score_entry_penalty'],
+					));
+				}
 				$rows[] = $row;
-				$colcount = count($row);
 				if (!empty ($entry['comments'])) {
 					$rows[] = array(
 							array(__('Comment for entry above:', true), array('colspan' => 2)),
