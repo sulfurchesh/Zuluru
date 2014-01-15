@@ -68,7 +68,7 @@ foreach ($division['Game'] as $game) {
 	<th><?php __(Configure::read('sport.field_cap')); ?></th>
 	<th><?php __($division['Division']['schedule_type'] == 'competition' ? 'Team' : 'Home'); ?></th>
 	<?php if ($division['Division']['schedule_type'] != 'competition'): ?>
- 	<th><?php __('Away'); ?></th>
+	<th><?php __('Away'); ?></th>
 	<?php endif; ?>
 	<th><?php __('Score'); ?></th>
 </tr>

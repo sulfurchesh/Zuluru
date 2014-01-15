@@ -36,6 +36,14 @@ class LeagueTypeComponent extends Object
 	}
 
 	/**
+	 * Add any league-type-specific fields for new teams.
+	 *
+	 */
+	function newTeam() {
+		return array();
+	}
+
+	/**
 	 * Sort the provided teams according to division-specific criteria.
 	 *
 	 * @param mixed $division Division to sort (teams are in ['Team'] key)

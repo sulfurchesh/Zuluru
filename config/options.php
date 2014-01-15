@@ -299,7 +299,7 @@ $config['options'] = array(
 		'none' => 'None',
 		'roundrobin' => 'Round Robin',
 		'ratings_ladder' => 'Ratings Ladder',
-		// 'competition' => 'Competition',
+		//'competition' => 'Competition',
 		'tournament' => 'Tournament',
 	),
 
@@ -312,7 +312,7 @@ $config['options'] = array(
 		'krach' => 'KRACH',
 		'rpi' => 'RPI',
 		'modified_elo' => 'Modified Elo',
-		// 'manual' => 'Manual',
+		//'manual' => 'Manual',
 	),
 
 	// List of available spirit questionnaires

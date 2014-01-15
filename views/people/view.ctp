@@ -15,7 +15,6 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('User Name'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php echo $person['user_name']; ?>
-
 			</dd>
 			<?php if (!Configure::read('feature.manage_accounts')): ?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php printf(__('%s User Id', true), Configure::read('feature.manage_name')); ?></dt>
