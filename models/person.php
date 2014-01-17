@@ -342,6 +342,7 @@ class Person extends AppModel {
 
 	function _afterFind ($record) {
 		$user_model = Configure::read('security.auth_model');
+
 		if (!empty($record[$this->alias][$user_model])) {
 			$user = $record[$this->alias][$user_model];
 		} else if (!empty($record[$user_model])) {
@@ -349,6 +350,7 @@ class Person extends AppModel {
 		} else {
 			$user = array();
 		}
+
 		if (array_key_exists('email', $user)) {
 			// We want the email column copied if it exists, even if it's blank
 			$record[$this->alias]['email'] = $user['email'];
@@ -410,8 +412,10 @@ class Person extends AppModel {
 	function findDuplicates($person) {
 		if (array_key_exists('AffiliatePerson', $person)) {
 			$affiliate = $person['AffiliatePerson']['affiliate_id'];
-		} else {
+		} else if (!empty($person['Affiliate'][0]['Affiliate'])) {
 			$affiliate = Set::extract('/Affiliate/Affiliate/id', $person);
+		} else {
+			$affiliate = Set::extract('/Affiliate/id', $person);
 		}
 
 		$user_model = Configure::read('security.auth_model');
