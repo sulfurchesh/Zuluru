@@ -27,14 +27,6 @@ class LeagueTypeComponent extends Object
 	function addMenuItems($division, $path, $is_coordinator = false) {
 	}
 
- 	/**
-	 * Add any league-type-specific fields for new teams.
-	 *
-	 */
-	function newTeam() {
-		return array();
-	}
-
 	/**
 	 * Add any league-type-specific fields for new teams.
 	 *

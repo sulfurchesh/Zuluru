@@ -465,11 +465,11 @@ class SportComponent extends Object
 			$default = Configure::read('sport.game_length');
 		}
 	
-	    $division = $this->Division->Game($this->field('division_id', array('Game.id' => $id)));
+	    #$division = $this->Division->Game($this->field('division_id', array('Game.id' => $id)));
 	
-		if (!empty($division['Division']['game_length'])) {
-				$length = $division['Division']['game_length'];
-		}
+		#if (!empty($division['Division']['game_length'])) {
+		#		$length = $division['Division']['game_length'];
+		#}
 		if ($length == 0) {
 			$length = $default;
 		}
