@@ -17,7 +17,8 @@ $this->Html->addCrumb ($this->ZuluruTime->date($game['GameSlot']['game_date']));
 		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->Html->link($this->ZuluruTime->date($game['GameSlot']['game_date']),
 			array('action' => 'view', 'game' => $game['Game']['id'])); ?></dd>
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Game Time'); ?></dt>
-		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->ZuluruTime->time($game['GameSlot']['game_start']); ?> - <?php echo $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></dd> <!-- XXX: game_end -->
+		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->ZuluruTime->time($game['GameSlot']['game_start']); ?></dd>
+//		- <?php echo $this->ZuluruTime->time($game['GameSlot']['display_game_end']); ?></dd> <!-- XXX: game_end -->
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Team'); ?></dt>
 		<dd<?php if ($i++ % 2 == 0) echo $class;?>><?php echo $this->element('teams/block', array('team' => $team)); ?></dd>
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Opponent'); ?></dt>
