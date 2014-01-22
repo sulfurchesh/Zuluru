@@ -1120,6 +1120,8 @@ class TeamsController extends AppController {
 				$this->Configuration->loadAffiliate($this->data['Team']['affiliate_id']);
 			}
 		}
+		$sport = reset(array_keys(Configure::read('options.sport')));
+		Configure::load("sport/$sport");
 		$affiliates = $this->_applicableAffiliates();
 		$regions = $this->Team->Division->Game->GameSlot->Field->Facility->Region->find('list', array(
 				'conditions' => array('affiliate_id' => array_keys($affiliates)),
@@ -2430,6 +2432,7 @@ class TeamsController extends AppController {
 					if (Configure::read('feature.generate_roster_email')) {
 						$this->_sendRemove($person, $team);
 					}
+					$this->UserCache->_deleteTeamData($person['Person']['id']);
 					return true;
 				}
 			}
@@ -2479,6 +2482,7 @@ class TeamsController extends AppController {
 
 		// If we were successful in the update, there may be emails to send
 		if ($success) {
+			$this->UserCache->_deleteTeamData($person['Person']['id']);
 			if (!Configure::read('feature.generate_roster_email')) {
 				return true;
 			}
@@ -2667,9 +2671,11 @@ class TeamsController extends AppController {
 			}
 		} else {
 			// A captain has accepted a request
-			$this->set (array(
-				'captain' => $this->UserCache->read('Person.full_name'),
-			));
+			$captain = $this->UserCache->read('Person.full_name');
+			if (empty($captain)) {
+				$captain = 'A captain';
+			}
+			$this->set (compact('captain'));
 
 			if (!$this->_sendMail (array (
 					'to' => $person,
@@ -2729,9 +2735,12 @@ class TeamsController extends AppController {
 			}
 		} else {
 			// A captain has declined a request
-			$this->set (array(
-				'captain' => $this->UserCache->read('Person.full_name'),
-			));
+			$captain = $this->UserCache->read('Person.full_name');
+			if (empty($captain)) {
+				$captain = 'A captain';
+			}
+			$this->set (compact('captain'));
+
 			if (!$this->_sendMail (array (
 					'to' => $person,
 					'replyTo' => $this->UserCache->read('Person'),
@@ -2843,10 +2852,15 @@ class TeamsController extends AppController {
 			'person' => $person['Person'],
 			'team' => $team['Team'],
 			'division' => $team['Division'],
-			'league' => $team['Division']['League'],
 			'role' => $role,
 		));
-		Configure::load("sport/{$team['Division']['League']['sport']}");
+		if (!empty($team['Division']['League'])) {
+			$this->set('league', $team['Division']['League']);
+			$sport = $team['Division']['League']['sport'];
+		} else {
+			$sport = reset(array_keys(Configure::read('options.sport')));
+		}
+		Configure::load("sport/$sport");
 	}
 
 	function _initRosterCaptains ($team) {

@@ -100,6 +100,15 @@ class PeopleController extends AppController {
 
 		$user_model = $this->Auth->authenticate->name;
 		$id_field = $this->Auth->authenticate->primaryKey;
+
+		$config = new DATABASE_CONFIG;
+		$prefix = $this->Auth->authenticate->tablePrefix;
+		if ($this->Auth->authenticate->useDbConfig != 'default') {
+			$config_name = $this->Auth->authenticate->useDbConfig;
+			$config = $config->$config_name;
+			$prefix = "{$config['database']}.$prefix";
+		}
+
 		$this->paginate = array(
 				'conditions' => array(
 					'Affiliate.id' => $affiliates
@@ -120,7 +129,7 @@ class PeopleController extends AppController {
 						'conditions' => 'Affiliate.id = AffiliatePerson.affiliate_id',
 					),
 					array(
-						'table' => "{$this->Auth->authenticate->tablePrefix}{$this->Auth->authenticate->useTable}",
+						'table' => "$prefix{$this->Auth->authenticate->useTable}",
 						'alias' => $user_model,
 						'type' => 'LEFT',
 						'foreignKey' => false,
@@ -2271,6 +2280,15 @@ class PeopleController extends AppController {
 		$affiliates = $this->_applicableAffiliateIDs(true);
 		$user_model = $this->Auth->authenticate->name;
 		$id_field = $this->Auth->authenticate->primaryKey;
+
+		$config = new DATABASE_CONFIG;
+		$prefix = $this->Auth->authenticate->tablePrefix;
+		if ($this->Auth->authenticate->useDbConfig != 'default') {
+			$config_name = $this->Auth->authenticate->useDbConfig;
+			$config = $config->$config_name;
+			$prefix = "{$config['database']}.$prefix";
+		}
+
 		$new = $this->Person->find ('all', array(
 			'joins' => array(
 				array(
@@ -2281,7 +2299,7 @@ class PeopleController extends AppController {
 					'conditions' => 'AffiliatePerson.person_id = Person.id',
 				),
 				array(
-					'table' => "{$this->Auth->authenticate->tablePrefix}{$this->Auth->authenticate->useTable}",
+					'table' => "$prefix{$this->Auth->authenticate->useTable}",
 					'alias' => $user_model,
 					'type' => 'LEFT',
 					'foreignKey' => false,
@@ -2349,7 +2367,8 @@ class PeopleController extends AppController {
 		}
 
 		$this->Person->contain($this->Auth->authenticate->name);
-		$person = $this->Person->read(null, $this->data['Person']['id']);
+		$person_id = $this->data['Person']['id'];
+		$person = $this->Person->read(null, $person_id);
 		if (!empty ($dup_id)) {
 			$this->Person->contain($this->Auth->authenticate->name);
 			$existing = $this->Person->read(null, $dup_id);
@@ -2413,24 +2432,24 @@ class PeopleController extends AppController {
 
 			case 'delete':
 				if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-					$this->Auth->authenticate->delete_duplicate_user($person['Person']['id']);
+					$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
 				}
 				if (! $this->Person->delete($person['Person']['id']) ) {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
 				}
-				Cache::delete("person/{$person['Person']['id']}");
+				Cache::delete("person/$person_id", 'file');
 				break;
 
 			case 'delete_duplicate':
 				if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-					$this->Auth->authenticate->delete_duplicate_user($person['Person']['id']);
+					$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
 				}
 
 				if (! $this->Person->delete($person['Person']['id']) ) {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
 					break;
 				}
-				Cache::delete("person/{$person['Person']['id']}");
+				Cache::delete("person/$person_id", 'file');
 
 				$this->set(compact('person', 'existing'));
 
@@ -2450,22 +2469,22 @@ class PeopleController extends AppController {
 			case 'merge_duplicate':
 				$transaction = new DatabaseTransaction($this->Person);
 				if (method_exists ($this->Auth->authenticate, 'merge_duplicate_user')) {
-					$this->Auth->authenticate->merge_duplicate_user($person['Person']['id'], $existing['Person']['id']);
+					$this->Auth->authenticate->merge_duplicate_user($person['Person']['user_id'], $existing['Person']['user_id']);
 				}
 
 				// Update all related records
 				foreach ($this->Person->hasMany as $class => $details) {
 					$this->Person->$class->updateAll(
-						array($details['foreignKey'] => $dup_id),
-						array($details['foreignKey'] => $person['Person']['id'])
+						array("$class.{$details['foreignKey']}" => $dup_id),
+						array("$class.{$details['foreignKey']}" => $person['Person']['id'])
 					);
 				}
 
 				foreach ($this->Person->hasAndBelongsToMany as $class => $details) {
 					if (array_key_exists ('with', $details)) {
 						$this->Person->$class->{$details['with']}->updateAll(
-							array($details['foreignKey'] => $dup_id),
-							array($details['foreignKey'] => $person['Person']['id'])
+							array("{$details['with']}.{$details['foreignKey']}" => $dup_id),
+							array("{$details['with']}.{$details['foreignKey']}" => $person['Person']['id'])
 						);
 					}
 				}
@@ -2476,7 +2495,7 @@ class PeopleController extends AppController {
 				}
 
 				// Unset a few fields that we want to retain from the old record
-				foreach (array('group_id', 'status') as $field) {
+				foreach (array('group_id', 'status', 'user_id') as $field) {
 					unset ($person['Person'][$field]);
 				}
 				$person['Person']['id'] = $dup_id;
@@ -2488,8 +2507,8 @@ class PeopleController extends AppController {
 				} else {
 					$transaction->commit();
 				}
-				$this->UserCache->clear('Person', $person['Person']['id']);
-				Cache::delete("person/{$existing['Person']['id']}");
+				Cache::delete("person/$person_id", 'file');
+				Cache::delete("person/$dup_id", 'file');
 
 				$this->set(compact('person', 'existing'));
 

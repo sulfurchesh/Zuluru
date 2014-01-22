@@ -660,6 +660,7 @@ class AppController extends Controller {
 		}
 
 		if ($this->is_admin || $this->is_manager) {
+			$this->_addMenuItem ('By name', array('controller' => 'people', 'action' => 'search'), array('Players', 'Search'));
 			$this->_addMenuItem ('By rule', array('controller' => 'people', 'action' => 'rule_search'), array('Players', 'Search'));
 			$this->_addMenuItem ('By league', array('controller' => 'people', 'action' => 'league_search'), array('Players', 'Search'));
 			$this->_addMenuItem ('Inactive', array('controller' => 'people', 'action' => 'inactive_search'), array('Players', 'Search'));
@@ -914,7 +915,7 @@ class AppController extends Controller {
 		$key = "{$team['Team']['name']}::{$team['Team']['id']}";
 
 		if (!empty($team['Team']['division_id'])) {
-			$this->_addMenuItem ("{$team['Team']['name']} ({$team['Division']['long_league_name']})", array('controller' => 'teams', 'action' => 'view', 'team' => $team['Team']['id']), $path, $key);
+			$this->_addMenuItem (html_entity_decode($team['Team']['name']) . ' (' . $team['Division']['long_league_name'] . ')', array('controller' => 'teams', 'action' => 'view', 'team' => $team['Team']['id']), $path, $key);
 			$this->_addMenuItem ('Schedule', array('controller' => 'teams', 'action' => 'schedule', 'team' => $team['Team']['id']), array_merge($path, array($key)));
 			$this->_addMenuItem ('Standings', array('controller' => 'divisions', 'action' => 'standings', 'division' => $team['Division']['id'], 'team' => $team['Team']['id']), array_merge($path, array($key)));
 			if ($team['Team']['track_attendance'] &&
@@ -929,7 +930,7 @@ class AppController extends Controller {
 			}
 			$this->_addDivisionMenuItems($team['Division'], $team['Division']['League'], $relative);
 		} else {
-			$this->_addMenuItem ($team['Team']['name'], array('controller' => 'teams', 'action' => 'view', 'team' => $team['Team']['id']), $path, $key);
+			$this->_addMenuItem (html_entity_decode($team['Team']['name']), array('controller' => 'teams', 'action' => 'view', 'team' => $team['Team']['id']), $path, $key);
 		}
 
 		if ($this->is_admin || $is_manager || $is_captain) {
