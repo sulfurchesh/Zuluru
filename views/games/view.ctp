@@ -50,14 +50,14 @@ $preliminary = ($game['Game']['home_team'] === null || ($game['Division']['sched
 			if (array_key_exists ('away_dependency', $game['Game'])) {
 				echo " ({$game['Game']['away_dependency']})";
 			}
-                        if ($game['Division']['rating_calculator'] !== 'none') {        // XXX: Rating
-			  if ($game['Division']['schedule_type'] != 'tournament') {
-			  	echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
-			  	if (!$preliminary && !Game::_is_finalized($game)) {
-			  		printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['AwayTeam']['rating'], $game['HomeTeam']['rating']) * 100, __('chance to win', true));
-			  	}
-			  }
+		if ($game['Division']['rating_calculator'] !== 'none') {        // XXX: Rating
+			if ($game['Division']['schedule_type'] != 'tournament') {
+				echo ' (' . __('currently rated', true) . ": {$game['AwayTeam']['rating']})";
+				if (!$preliminary && !Game::_is_finalized($game)) {
+					printf (' (%0.1f%% %s)', $ratings_obj->calculateExpectedWin($game['AwayTeam']['rating'], $game['HomeTeam']['rating']) * 100, __('chance to win', true));
+				}
 			}
+		}
 		}
 		?>
 

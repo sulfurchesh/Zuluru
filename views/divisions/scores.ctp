@@ -108,9 +108,9 @@ foreach ($division['Team'] as $team_id => $team) {
 						} else {
 							$game_result = "{$game['HomeTeam']['name']} and {$game['AwayTeam']['name']} tied $game_score";
 						}
-                                                if ($game['Division']['rating_calculator'] !== 'none') {   // XXX: Rating
-						   $game_result .= " ({$game['Game']['rating_points']} rating points transferred)";
-				                }
+						if ($game['Division']['rating_calculator'] !== 'none') {   // XXX: Rating
+							$game_result .= " ({$game['Game']['rating_points']} rating points transferred)";
+						}
 				}
 
 				$popup = $this->ZuluruTime->date ($game['GameSlot']['game_date']) . " at {$game['GameSlot']['Field']['long_code']}: $game_result";

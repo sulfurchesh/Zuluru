@@ -76,11 +76,11 @@ foreach ($divisions as $division):
 	<th><?php __('Last Game');?></th>
 	<th><?php __('Roster Deadline');?></th>
 	<th><?php __('Allstars');?></th>
-        <?php
-          if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-            echo $this->Html->tag ('th', __('Rating Calculator'));
-          }
-        ?>
+	<?php
+		if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+			echo $this->Html->tag ('th', __('Rating Calculator'));
+		}
+	?>
 	<th><?php __('Remind After');?></th>
 	<th><?php __('Finalize After');?></th>
 	<th><?php __('Roster Rule');?></th>
@@ -132,11 +132,11 @@ foreach ($divisions as $division):
 			__(Inflector::humanize($division['Division']['allstars_from']));
 		}
 		?></td>
-                <?php
-                if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-                  echo $this->Html->tag ('td', __(Inflector::humanize($division['Division']['rating_calculator']))); 
-                }
-                ?>
+		<?php
+			if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+				echo $this->Html->tag ('td', __(Inflector::humanize($division['Division']['rating_calculator']))); 
+			}
+		?>
 		<td><?php echo $division['Division']['email_after']; ?></td>
 		<td><?php echo $division['Division']['finalize_after']; ?></td>
 		<td><?php echo $division['Division']['roster_rule']; ?></td>

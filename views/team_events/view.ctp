@@ -116,9 +116,9 @@ $this->Html->addCrumb (__('View', true));
 		<th><?php __('Role'); ?></th>
 		<th><?php __('Gender'); ?></th>
 		<?php
-		  if ($event['Team']['Division']['rating_calculator'] !== 'none') {  // XXX: Rating
-		    echo $this->Html->tag ('th', __('Rating'));
-		  }
+			if ($event['Team']['Division']['rating_calculator'] !== 'none') {  // XXX: Rating
+				echo $this->Html->tag ('th', __('Rating'));
+			}
 		?>
 		<th><?php __('Attendance'); ?></th>
 		<th><?php __('Updated'); ?></th>
@@ -141,9 +141,9 @@ $this->Html->addCrumb (__('View', true));
 		<td><?php __(Configure::read("options.roster_role.{$person['TeamsPerson']['role']}")); ?></td>
 		<td><?php __($person['gender']);?></td>
 		<?php
-		  if ($event['Team']['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-		    echo $this->Html->tag ('td', $person['skill_level']);
-		  }
+			if ($event['Team']['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+				echo $this->Html->tag ('td', $person['skill_level']);
+			}
 		?>
 		<td class="<?php echo low($statuses[$status]);?>"><?php
 			echo $this->element('team_events/attendance_change', array(

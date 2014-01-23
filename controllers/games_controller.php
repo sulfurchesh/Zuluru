@@ -34,10 +34,10 @@ class GamesController extends AppController {
 	}
 
 	function isAuthorized() {
-                // Admin has full control (in theory)
-                if ($this->is_admin) {
-                        return true;
-                }
+		// Admin has full control (in theory)
+		if ($this->is_admin) {
+			return true;
+		}
 		// Anyone that's logged in can perform these operations
 		if (in_array ($this->params['action'], array(
 				'ratings_table',
@@ -3332,7 +3332,7 @@ class GamesController extends AppController {
 
 		$this->set(compact('games', 'remind_count', 'summary_count'));
 
-		$this->Lock->unlock();		
+		$this->Lock->unlock();
 	}
 
 	function _remindAttendance($game, $team, $opponent, $reminded) {

@@ -24,11 +24,11 @@ if (isset ($published)) {
 <?php // TODO: Use a league element ?>
 <tr>
 	<th rowspan="2"><?php __('Team'); ?></th>
-        <?php
-            if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-   	      echo $this->Html->tag ('th', __('Rating'), array('rowspan' => 2));
-            }
-        ?>
+	<?php
+		if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+			echo $this->Html->tag ('th', __('Rating'), array('rowspan' => 2));
+		}
+	?>
 <?php
 $region_prefs = Configure::read('feature.region_preference');
 if ($region_prefs) :
@@ -110,11 +110,11 @@ $numteams = count ($team_count);
 $rows = array();
 foreach ($division['Team'] as $team) {
 	$id = $team['id'];
-        if ($division['Division']['rating_calculator'] !== 'none') {    // XXX: Rating
-	  $row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']);
-        } else {
-	  $row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)));
-        }
+	if ($division['Division']['rating_calculator'] !== 'none') {    // XXX: Rating
+		$row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)), $team['rating']);
+	} else {
+		$row = array ($this->element('teams/block', array('team' => $team, 'show_shirt' => false)));
+	}
 	if ($region_prefs) {
 		if (!empty($team['Region'])) {
 			$row[] = $team['Region']['name'];
@@ -175,9 +175,9 @@ foreach ($division['Team'] as $team) {
 
 // Output totals line
 if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-  $colspan = 2;
+	$colspan = 2;
 } else {
-  $colspan = 1;
+	$colspan = 1;
 }
 $total_row = array(array(__('Total games', true), array('colspan' => $colspan + $region_prefs)));
 $avg_row = array(array(__('Average', true), array('colspan' => $colspan + $region_prefs))); 
@@ -239,7 +239,7 @@ if ($region_prefs) {
 	array_unshift ($heading, __('Region Preference', true));
 }
 if ($division['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-  array_unshift ($heading, __('Rating', true));
+	array_unshift ($heading, __('Rating', true));
 }
 array_unshift ($heading, __('Team', true));
 $heading[] = __('Total', true);

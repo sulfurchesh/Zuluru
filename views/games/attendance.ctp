@@ -85,11 +85,11 @@ $can_annotate = Configure::read('feature.annotations') && in_array($team['id'], 
 		<th><?php __('Name'); ?></th>
 		<th><?php __('Role'); ?></th>
 		<th><?php __('Gender'); ?></th> <!-- XXX: Non-coed -->
-<?php
-            if ($game['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-                $this->Html->tag('th', __('Rating'));
-            }
-?>
+		<?php
+			if ($game['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+				$this->Html->tag('th', __('Rating'));
+			}
+		?>
 		<th><?php __('Attendance'); ?></th>
 		<th><?php __('Updated'); ?></th>
 	</tr>
@@ -111,11 +111,11 @@ $can_annotate = Configure::read('feature.annotations') && in_array($team['id'], 
 		<td><?php echo $this->element('people/block', compact('person')); ?></td>
 		<td><?php __(Configure::read("options.roster_role.{$person['TeamsPerson']['role']}")); ?></td>
 		<td><?php __($person['gender']);?></td> <!-- XXX: Non-coed -->
-                <?php
-                if ($game['Division']['rating_calculator'] !== 'none') { // XXX: Rating
-                  $this->Html->tag('td', $person['skill_level']);
-                }
-                ?>
+		<?php
+			if ($game['Division']['rating_calculator'] !== 'none') { // XXX: Rating
+				$this->Html->tag('td', $person['skill_level']);
+			}
+		?>
 		<td class="<?php echo low($statuses[$status]);?>"><?php
 			echo $this->element('games/attendance_change', array(
 				'team' => $team,
