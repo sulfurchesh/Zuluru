@@ -17,9 +17,11 @@ class ZuluruTimeHelper extends TimeHelper {
 	}
 
 	function date($date) {
-		// Some dates may only have a valid year portion
-		if (strpos($date, '00-00') !== false) {
-			$date_format = 'Y';
+		if ($date == '0000-00-00' || $date === null) {
+			return __('unknown', true);
+		} else if (strpos($date, '00-00') !== false) {
+			// Some dates may only have a valid year portion
+			return substr($date, 0, 4);
 		} else {
 			$date_format = Configure::read('personal.date_format');
 		}
