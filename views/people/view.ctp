@@ -6,7 +6,7 @@ $this->Html->addCrumb (__('View', true));
 
 <div class="people view">
 <h2><?php
-echo $this->element('people/player_photo', array('person' => $person, 'photo' => $person));
+echo $this->element('people/player_photo', array('person' => $person, 'photo' => $photo));
 echo $person['full_name'];
 $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_captain || $is_my_captain || $is_my_coordinator || $is_division_captain;
 ?></h2>
@@ -110,8 +110,17 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<?php if (Configure::read('profile.birthdate')): ?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Birthdate'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php echo $this->ZuluruTime->date($person['birthdate']); ?>
-				&nbsp;
+				<?php
+				if (Configure::read('feature.birth_year_only')) {
+					if (empty($person['birthdate']) || substr($person['birthdate'], 0, 4) == '0000') {
+						__('unknown');
+					} else {
+						echo substr($person['birthdate'], 0, 4);
+					}
+				} else {
+					echo $this->ZuluruTime->date($person['birthdate']);
+				}
+				?>
 			</dd>
 			<?php endif; ?>
 		<?php endif; ?>
@@ -205,11 +214,14 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			echo $this->Html->tag ('li', $this->Html->link(__($link, true), array('action' => 'note', 'person' => $person['id'])));
 		}
 		if ($is_me || $is_admin || $is_manager) {
-			echo $this->Html->tag ('li', $this->Html->link(__('Edit Profile', true), array('action' => 'edit', 'person' => $person['id'], 'return' => true)));
+			echo $this->Html->tag ('li', $this->ZuluruHtml->iconLink('edit_24.png', array('action' => 'edit', 'person' => $person['id'], 'return' => true), array('alt' => __('Edit Profile', true), 'title' => __('Edit Profile', true))));
 			echo $this->Html->tag ('li', $this->Html->link(__('Edit Preferences', true), array('action' => 'preferences', 'person' => $person['id'])));
+			if (!empty($person['user_id'])) {
+				echo $this->Html->tag ('li', $this->Html->link(__('Change Password', true), array('controller' => 'users', 'action' => 'change_password', 'user' => $person['user_id'])));
+			}
 		}
 		if ($is_admin || $is_manager) {
-			echo $this->Html->tag ('li', $this->Html->link(__('Delete Player', true), array('action' => 'delete', 'person' => $person['id']), null, sprintf(__('Are you sure you want to delete # %s?', true), $person['id'])));
+			echo $this->Html->tag ('li', $this->ZuluruHtml->iconLink('delete_24.png', array('action' => 'delete', 'person' => $person['id']), array('alt' => __('Delete Player', true), 'title' => __('Delete Player', true)), array('confirm' => sprintf(__('Are you sure you want to delete # %s?', true), $person['id']))));
 		}
 		?>
 	</ul>
@@ -464,9 +476,10 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if (($is_admin || $is_manager || $is_me) && !empty($waivers)):?>
+<?php if ($is_admin || $is_manager || $is_me): ?>
 <div class="related">
 	<h3><?php __('Waivers');?></h3>
+<?php if(!empty($waivers)): ?>
 	<table class="list">
 	<tr>
 		<th><?php __('Waiver');?></th>
@@ -492,6 +505,9 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 		</tr>
 		<?php endforeach; ?>
 	</table>
+<?php else: ?>
+	<p>No current waiver is in effect.</p>
+<?php endif; ?>
 
 	<div class="actions">
 		<ul>
