@@ -3,10 +3,6 @@
 	<th rowspan="2"><?php __('Team'); ?></th>
 	<?php if ($division['current_round'] != 1): ?>
 	<th colspan="7"><?php __('Current Round'); ?></th>
-	<th rowspan="2"><?php __('Seed'); ?></th>
-	<th rowspan="2"><?php __('Team Name'); ?></th>
-	<?php if ($division['current_round'] != 1): ?>
-	<th colspan="8"><?php __('Current Round'); ?></th>
 	<?php endif; ?>
 	<th colspan="8"><?php __('Season To Date'); ?></th>
 	<th rowspan="2"><?php __('Streak'); ?></th>
