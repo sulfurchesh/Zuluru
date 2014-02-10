@@ -6,7 +6,7 @@ class LeaguesController extends AppController {
 	var $components = array('Lock');
 
 	function publicActions() {
-		return array('cron', 'index', 'view', 'tooltip', 'division_count');
+		return array('cron', 'index', 'view', 'schedule', 'standings', 'tooltip', 'division_count');
 	}
 
 	function freeActions() {
@@ -43,21 +43,14 @@ class LeaguesController extends AppController {
 
 		// Coordinators can perform these operations on leagues where they coordinate the only division
 		if (in_array ($this->params['action'], array(
+				'add',
 				'edit',
 		)))
 		{
-			// If a league id is specified, check if we're a coordinator of that league's only division
+			// If a league id is specified, check if we're a coordinator of all of that league's divisions
 			$league = $this->_arg('league');
-			if ($league) {
-				foreach ($this->UserCache->read('DivisionIDs') as $division) {
-					if ($this->League->Division->league($division) == $league &&
-						$this->requestAction(array('controller' => 'leagues', 'action' => 'division_count'),
-							array('named' => array('league' => $league))) == 1
-						)
-					{
-						return true;
-					}
-				}
+			if ($league && $this->League->is_coordinator($league, null, true)) {
+				return true;
 			}
 		}
 
@@ -174,14 +167,7 @@ class LeaguesController extends AppController {
 		$this->set(compact ('league', 'league_obj'));
 
 		$this->set('is_manager', $this->is_manager && in_array($league['League']['affiliate_id'], $this->UserCache->read('ManagedAffiliateIDs')));
-
-		$divisions = $this->UserCache->read('DivisionIDs');
-		if (!empty($divisions)) {
-			$coordinated_divisions = array_intersect(Set::extract('/Division/id', $league), $divisions);
-		} else {
-			$coordinated_divisions = null;
-		}
-		$this->set('is_coordinator', !empty($coordinated_divisions));
+		$this->set('is_coordinator', $this->League->is_coordinator($league));
 
 		$affiliates = $this->_applicableAffiliateIDs(true);
 		$this->set(compact('affiliates'));
@@ -251,13 +237,17 @@ class LeaguesController extends AppController {
 	function add() {
 		if (!empty($this->data)) {
 			$this->League->create();
+			$transaction = new DatabaseTransaction($this->League);
 			if ($this->League->save($this->data)) {
-				$this->Session->setFlash(sprintf(__('The %s has been saved', true), __('league', true)), 'default', array('class' => 'success'));
-				$this->redirect(array('action' => 'index'));
-			} else {
-				$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('league', true)), 'default', array('class' => 'warning'));
-				$this->Configuration->loadAffiliate($this->data['League']['affiliate_id']);
+				$this->data['Division']['league_id'] = $this->League->id;
+				if ($this->League->Division->save($this->data['Division'])) {
+					$transaction->commit();
+					$this->Session->setFlash(sprintf(__('The %s has been saved', true), __('league', true)), 'default', array('class' => 'success'));
+					$this->redirect(array('action' => 'index'));
+				}
 			}
+			$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('league', true)), 'default', array('class' => 'warning'));
+			$this->Configuration->loadAffiliate($this->data['League']['affiliate_id']);
 		} else if ($this->_arg('league')) {
 			// To clone a league, read the old one and remove the id
 			$this->League->contain();
@@ -270,6 +260,7 @@ class LeaguesController extends AppController {
 			unset($this->data['League']['id']);
 		}
 
+		$this->set('days', $this->League->Division->Day->find('list'));
 		$sports = Configure::read('options.sport');
 		if (count($sports) == 1) {
 			$sport = reset(array_keys($sports));
@@ -303,10 +294,17 @@ class LeaguesController extends AppController {
 			if (array_key_exists('Day', $this->data['League'])) {
 				$this->data['Day'] = $this->data['League']['Day'];
 			}
-			if ($this->League->save($this->data) && (!array_key_exists('Division', $this->data) || $this->League->Division->saveAll($this->data))) {
+			$transaction = new DatabaseTransaction($this->League);
+
+			// Division->saveAll needs to not have League data in it
+			if (array_key_exists('Division', $this->data)) {
+				$division = $this->data;
+				unset($division['League']);
+			}
+			if ($this->League->save($this->data) && (!isset($division) || $this->League->Division->saveAll($division))) {
 				// Any time that this is called, the division seeding might change.
 				// We just reset it here, and it will be recalculated as required elsewhere.
-				if (array_key_exists('Division', $this->data)) {
+				if (isset($division)) {
 					$divisions = array($this->data['Division']['id']);
 				} else {
 					$divisions = $this->League->Division->find('list', array(
@@ -320,7 +318,10 @@ class LeaguesController extends AppController {
 					Cache::delete("division/$division/standings", 'long_term');
 					Cache::delete("division/$division/schedule", 'long_term');
 				}
+				Cache::delete("league/$id/standings", 'long_term');
+				Cache::delete("league/$id/schedule", 'long_term');
 
+				$transaction->commit();
 				$this->Session->setFlash(sprintf(__('The %s has been saved', true), __('league', true)), 'default', array('class' => 'success'));
 				$this->redirect(array('action' => 'index'));
 			} else {
@@ -393,6 +394,227 @@ class LeaguesController extends AppController {
 		}
 		$this->Session->setFlash(sprintf(__('%s was not deleted', true), __('League', true)), 'default', array('class' => 'warning'));
 		$this->redirect(array('action' => 'index'));
+	}
+
+	function schedule() {
+		$id = $this->_arg('league');
+		if (!$id) {
+			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('league', true)), 'default', array('class' => 'info'));
+			$this->redirect(array('action' => 'index'));
+		}
+
+		// Hopefully, everything we need is already cached
+		$cache_key = 'league/' . intval($id) . '/schedule';
+		$cached = Cache::read($cache_key, 'long_term');
+		if ($cached) {
+			$league = $cached;
+		} else {
+			$this->League->contain('Division');
+			$league = $this->League->read(null, $id);
+			if (!$league) {
+				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('league', true)), 'default', array('class' => 'info'));
+				$this->redirect(array('action' => 'index'));
+			}
+
+			$divisions = Set::extract('/Division/id', $league);
+			if (empty($divisions)) {
+				$this->Session->setFlash(__('This league has no divisions yet.', true), 'default', array('class' => 'info'));
+				$this->redirect(array('action' => 'index'));
+			}
+
+			$divisions = $this->League->Division->find('all', array (
+				'contain' => array(
+					'Game' => array(
+						'conditions' => array(
+							'OR' => array(
+								'Game.home_dependency_type !=' => 'copy',
+								'Game.home_dependency_type' => null,
+							),
+						),
+						'GameSlot' => array('Field' => 'Facility'),
+						'ScoreEntry',
+						'HomeTeam',
+						'HomePoolTeam' => 'DependencyPool',
+						'AwayTeam',
+						'AwayPoolTeam' => 'DependencyPool',
+					),
+				),
+				'conditions' => array('Division.id' => $divisions),
+			));
+
+			$league['Game'] = array();
+			foreach ($divisions as $division) {
+				foreach ($division['Game'] as $game) {
+					$game['Division'] = $division['Division'];
+					$league['Game'][] = $game;
+				}
+			}
+			if (empty ($league['Game'])) {
+				$this->Session->setFlash(__('This league has no games scheduled yet.', true), 'default', array('class' => 'info'));
+				$this->redirect(array('action' => 'index'));
+			}
+
+			// Sort games by date, time and field
+			usort ($league['Game'], array ('Game', 'compareDateAndField'));
+
+			Cache::write($cache_key, $league, 'long_term');
+		}
+		$this->Configuration->loadAffiliate($league['League']['affiliate_id']);
+		Configure::load("sport/{$league['League']['sport']}");
+
+		$is_coordinator = $this->League->is_coordinator($league);
+		$is_manager = $this->is_manager && in_array($league['League']['affiliate_id'], $this->UserCache->read('ManagedAffiliateIDs'));
+		if ($this->is_admin || $is_manager || $is_coordinator) {
+			$edit_date = $this->_arg('edit_date');
+			if (!empty ($this->data)) {
+				$edit_date = $this->data['Game']['edit_date'];
+				unset ($this->data['Game']['edit_date']);
+			}
+		} else {
+			$edit_date = null;
+		}
+
+		if ($edit_date) {
+			$tournament_games = Set::extract ('/Division/Game[type!=' . SEASON_GAME . "]/GameSlot[game_date=$edit_date]", $league);
+			$is_tournament = !empty($tournament_games);
+			$divisions = array();
+			$double_booking = false;
+			foreach ($league['Division'] as $division) {
+				if ($this->is_admin || $is_manager || in_array($division['id'], $this->UserCache->read('DivisionIDs'))) {
+					$divisions[] = $division['id'];
+					$double_booking |= $division['double_booking'];
+				}
+			}
+			$game_slots = $this->League->Division->DivisionGameslotAvailability->GameSlot->getAvailable($divisions, $edit_date, $is_tournament, $double_booking);
+		} else {
+			$is_tournament = false;
+		}
+
+		// Save posted data
+		if (!empty ($this->data) && ($this->is_admin || $is_manager || $is_coordinator)) {
+			if ($this->Lock->lock ('scheduling', $this->League->affiliate($league['League']['id']), 'schedule creation or edit')) {
+				$ret = $this->League->Division->Game->_validateAndSaveSchedule($this->data, $game_slots);
+				if ($ret === true) {
+					$this->Session->setFlash(__('Schedule changes saved!', true), 'default', array('class' => 'success'));
+				} else {
+					$this->Session->setFlash($ret['text'], 'default', array('class' => $ret['class']));
+				}
+				if ($ret === true || !empty($ret['result'])) {
+					Cache::delete($cache_key, 'long_term');
+					Cache::delete('division/' . intval($id) . '/standings', 'long_term');
+					Cache::delete("league/$id/standings", 'long_term');
+					Cache::delete("league/$id/schedule", 'long_term');
+					$this->redirect (array('action' => 'schedule', 'league' => $id));
+				}
+			}
+		}
+
+		$this->set(compact ('id', 'league', 'edit_date', 'game_slots', 'is_coordinator', 'is_tournament'));
+
+		$this->_addLeagueMenuItems ($league);
+	}
+
+	function standings() {
+		$id = $this->_arg('league');
+		if (!$id) {
+			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('league', true)), 'default', array('class' => 'info'));
+			$this->redirect(array('controller' => 'leagues', 'action' => 'index'));
+		}
+
+		// Hopefully, everything we need is already cached
+		$cache_key = 'league/' . intval($id) . '/standings';
+		$cached = Cache::read($cache_key, 'long_term');
+		if ($cached) {
+			$league = $cached;
+		}
+		if (!empty($league)) {
+			$this->Configuration->loadAffiliate($league['League']['affiliate_id']);
+			Configure::load("sport/{$league['League']['sport']}");
+			$spirit_obj = $this->_getComponent ('Spirit', $league['League']['sotg_questions'], $this);
+		} else {
+			$this->League->contain(array (
+				'Division' => array(
+					'Day' => array('order' => 'day_id'),
+					'Team',
+				),
+			));
+			$league = $this->League->read(null, $id);
+			if (!$league) {
+				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('league', true)), 'default', array('class' => 'info'));
+				$this->redirect(array('controller' => 'leagues', 'action' => 'index'));
+			}
+			$this->Configuration->loadAffiliate($league['League']['affiliate_id']);
+			Configure::load("sport/{$league['League']['sport']}");
+
+			$spirit_obj = $this->_getComponent ('Spirit', $league['League']['sotg_questions'], $this);
+
+			$has_games = false;
+			foreach ($league['Division'] as $key => $division) {
+				// Find all games played by teams that are currently in this division,
+				// or tournament games for this division
+				$teams = Set::extract ('/Team/id', $division);
+				if (empty($teams)) {
+					$conditions = array(
+						'Game.division_id' => $division['id'],
+						'Game.type !=' => SEASON_GAME,
+					);
+				} else {
+					$conditions = array('OR' => array(
+						'Game.home_team' => $teams,
+						'Game.away_team' => $teams,
+						'AND' => array(
+							'Game.division_id' => $division['id'],
+							'Game.type !=' => SEASON_GAME,
+						),
+					));
+				}
+				$conditions['NOT'] = array('Game.status' => Configure::read('unplayed_status'));
+
+				$league['Division'][$key]['Game'] = $this->League->Division->Game->find('all', array(
+						'conditions' => $conditions,
+						'contain' => array(
+							'GameSlot',
+							'HomePoolTeam' => array('Pool', 'DependencyPool'),
+							'AwayPoolTeam' => array('Pool', 'DependencyPool'),
+							'ScoreEntry',
+							'SpiritEntry',
+						),
+				));
+
+				if (!empty ($league['Division'][$key]['Game'])) {
+					// Sort games by date, time and field
+					usort ($league['Division'][$key]['Game'], array ('Game', 'compareDateAndField'));
+					Game::_adjustEntryIndices($league['Division'][$key]['Game']);
+					$has_games = true;
+
+					// If there's anyone without seed information, save the seeds
+					$league_obj = $this->_getComponent ('LeagueType', $division['schedule_type'], $this);
+					$league_obj->sort($league['Division'][$key]['Team'], $league['Division'][$key], $league['League'], $league['Division'][$key]['Game'], $spirit_obj, false);
+					$league['Division'][$key]['render_element'] = $league_obj->render_element;
+					$unseeded = Set::extract('/Team[seed=0]', $division);
+					if (!empty($unseeded)) {
+						$seed = 0;
+						foreach ($division['Team'] as $tkey => $team) {
+							$this->League->Division->Team->id = $team['id'];
+							$this->League->Division->Team->saveField('seed', ++$seed);
+							$league['Division'][$key]['Team'][$tkey]['seed'] = $seed;
+						}
+					}
+				}
+			}
+
+			if (!$has_games) {
+				$this->Session->setFlash(__('Cannot generate standings for a league with no schedule.', true), 'default', array('class' => 'info'));
+				$this->redirect(array('controller' => 'leagues', 'action' => 'index'));
+			}
+
+			Cache::write($cache_key, $league, 'long_term');
+		}
+
+		$this->set(compact ('league', 'league_obj', 'spirit_obj'));
+		$this->set('is_coordinator', $this->League->is_coordinator($league));
+
+		$this->_addLeagueMenuItems ($league);
 	}
 
 	function cron() {

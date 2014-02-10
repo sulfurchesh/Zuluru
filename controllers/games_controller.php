@@ -422,6 +422,8 @@ class GamesController extends AppController {
 
 					Cache::delete("division/{$game['Division']['id']}/standings", 'long_term');
 					Cache::delete("division/{$game['Division']['id']}/schedule", 'long_term');
+					Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/standings', 'long_term');
+					Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/schedule', 'long_term');
 
 					if ($this->_arg('stats')) {
 						$this->redirect(array('action' => 'submit_stats', 'game' => $id));
@@ -827,6 +829,8 @@ class GamesController extends AppController {
 
 				Cache::delete("division/{$game['Division']['id']}/standings", 'long_term');
 				Cache::delete("division/{$game['Division']['id']}/schedule", 'long_term');
+				Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/standings', 'long_term');
+				Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/schedule', 'long_term');
 
 				$this->redirect(array('controller' => 'divisions', 'action' => 'schedule', 'division' => $game['Division']['id']));
 			} else {
@@ -2249,6 +2253,8 @@ class GamesController extends AppController {
 
 				Cache::delete("division/{$game['Division']['id']}/standings", 'long_term');
 				Cache::delete("division/{$game['Division']['id']}/schedule", 'long_term');
+				Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/standings', 'long_term');
+				Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/schedule', 'long_term');
 
 				// Check if the opponent has an entry
 				if (!$this->Game->_get_score_entry($game, $opponent['id'])) {
@@ -2498,6 +2504,7 @@ class GamesController extends AppController {
 						Cache::delete("team/{$game['Game']['home_team']}/stats", 'long_term');
 						Cache::delete("team/{$game['Game']['away_team']}/stats", 'long_term');
 					}
+					Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/stats', 'long_term');
 
 					$this->redirect(array('action' => 'view', 'game' => $id));
 				} else {
@@ -2763,6 +2770,8 @@ class GamesController extends AppController {
 
 		Cache::delete("division/{$game['Division']['id']}/standings", 'long_term');
 		Cache::delete("division/{$game['Division']['id']}/schedule", 'long_term');
+		Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/standings', 'long_term');
+		Cache::delete('league/' . $this->Game->Division->league($game['Division']['id']) . '/schedule', 'long_term');
 
 		return true;
 	}

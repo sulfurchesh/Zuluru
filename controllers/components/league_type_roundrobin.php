@@ -189,7 +189,7 @@ class LeagueTypeRoundrobinComponent extends LeagueTypeComponent
 				break;
 
 			case 'standings':
-				$this->sort($this->division);
+				$this->sort($this->division['Team'], $this->division['Division'], $this->division['League'], $this->division['Game']);
 				$top_half = array_slice($this->division['Team'], 0, ($num_teams / 2));
 				$bottom_half = array_slice($this->division['Team'], ($num_teams / 2));
 				break;
@@ -197,7 +197,7 @@ class LeagueTypeRoundrobinComponent extends LeagueTypeComponent
 			// Sort by standings, then do a "snake" to split into two groups
 			// $i will be 1,2,...,n, so $i%4 will be 1,2,3,0,...
 			case 'mix':
-				$this->sort($this->division);
+				$this->sort($this->division['Team'], $this->division['Division'], $this->division['League'], $this->division['Game']);
 				$top_half = $bottom_half = array();
 				$i = 0;
 				foreach ($this->division['Team'] as $team) {
@@ -274,6 +274,10 @@ class LeagueTypeRoundrobinComponent extends LeagueTypeComponent
 
 			// Now, move the date forward to next available game date
 			$date = $this->nextGameslotDay($date, $num_teams / 2 * ($repeats - 1));
+			if (!$date) {
+				$this->_controller->Session->setFlash(sprintf (__('Had to stop with %s sets left to schedule: no more game dates available', true), $iterations_remaining), 'default', array('class' => 'error'));
+				return false;
+			}
 		}
 
 		return true;

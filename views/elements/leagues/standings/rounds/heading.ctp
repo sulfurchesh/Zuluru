@@ -1,31 +1,35 @@
 <tr>
 	<th rowspan="2"><?php __('Rank'); ?></th>
 	<th rowspan="2"><?php __('Team'); ?></th>
-	<?php if ($division['Division']['current_round'] != 1): ?>
+	<?php if ($division['current_round'] != 1): ?>
 	<th colspan="7"><?php __('Current Round'); ?></th>
+	<th rowspan="2"><?php __('Seed'); ?></th>
+	<th rowspan="2"><?php __('Team Name'); ?></th>
+	<?php if ($division['current_round'] != 1): ?>
+	<th colspan="8"><?php __('Current Round'); ?></th>
 	<?php endif; ?>
 	<th colspan="8"><?php __('Season To Date'); ?></th>
 	<th rowspan="2"><?php __('Streak'); ?></th>
-	<?php if (League::hasSpirit($division)): ?>
+	<?php if (League::hasSpirit($league)): ?>
 	<th rowspan="2"><?php __('Spirit'); ?></th>
 	<?php endif; ?>
 </tr>
 <tr>
-	<?php if ($division['Division']['current_round'] != 1): ?>
-	<th><?php __('W'); ?></th>
-	<th><?php __('D'); ?></th>
-	<th><?php __('L'); ?></th>
-	<th><?php __('GF'); ?></th>
-	<th><?php __('GA'); ?></th>
-	<th><?php __('GD'); ?></th>
-	<th><?php __('Pts'); ?></th>
+	<?php if ($division['current_round'] != 1): ?>
+	<th title="<?php __('Wins'); ?>"><?php __('W'); ?></th>
+	<th title="<?php __('Draws'); ?>"><?php __('D'); ?></th>
+	<th title="<?php __('Losses'); ?>"><?php __('L'); ?></th>
+	<th title="<?php __('Goals For'); ?>"><?php __('GF'); ?></th>
+	<th title="<?php __('Goals Against'); ?>"><?php __('GA'); ?></th>
+	<th title="<?php __('Goal Difference'); ?>"><?php __('GD'); ?></th>
+	<th title="<?php __('Points'); ?>"><?php __('P'); ?></th>
 	<?php endif; ?>
-	<th><?php __('Pld'); ?></th>
-	<th><?php __('W'); ?></th>
-	<th><?php __('D'); ?></th>
-	<th><?php __('L'); ?></th>
-	<th><?php __('GF'); ?></th>
-	<th><?php __('GA'); ?></th>
-	<th><?php __('GD'); ?></th>
-	<th><?php __('Pts'); ?></th>
+	<th title="<?php __('Played'); ?>"><?php __('Pld'); ?></th>
+	<th title="<?php __('Wins'); ?>"><?php __('W'); ?></th>
+	<th title="<?php __('Draws'); ?>"><?php __('D'); ?></th>
+	<th title="<?php __('Losses'); ?>"><?php __('L'); ?></th>
+	<th title="<?php __('Goals For'); ?>"><?php __('GF'); ?></th>
+	<th title="<?php __('Goals Against'); ?>"><?php __('GA'); ?></th>
+	<th title="<?php __('Goal Difference'); ?>"><?php __('GD'); ?></th>
+	<th title="<?php __('Points'); ?>"><?php __('P'); ?></th>
 </tr>
