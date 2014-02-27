@@ -31,6 +31,10 @@ $config['sport'] = array(
 	'game_length' => 60,
 );
 
+if (file_exists(CONFIGS . 'sport/hockey_custom.php')) {
+	include(CONFIGS . 'sport/hockey_custom.php');
+}
+
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));
 
 ?>

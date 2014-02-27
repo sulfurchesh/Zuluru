@@ -33,6 +33,10 @@ $config['sport'] = array(
 	'rating_questions' => false,
 );
 
+if (file_exists(CONFIGS . 'sport/basketball_custom.php')) {
+	include(CONFIGS . 'sport/basketball_custom.php');
+}
+
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));
 
 ?>

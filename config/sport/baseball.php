@@ -37,6 +37,10 @@ $config['sport'] = array(
 	'game_length' => 9,
 );
 
+if (file_exists(CONFIGS . 'sport/baseball_custom.php')) {
+	include(CONFIGS . 'sport/baseball_custom.php');
+}
+
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));
 
 ?>

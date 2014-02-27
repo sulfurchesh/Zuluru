@@ -21,6 +21,10 @@ $config['sport'] = array(
 	'rating_questions' => false,
 );
 
+if (file_exists(CONFIGS . 'sport/dodgeball_custom.php')) {
+	include(CONFIGS . 'sport/dodgeball_custom.php');
+}
+
 $config['sport']['ratio'] = make_human_options(array_keys($config['sport']['roster_requirements']));
 
 ?>
