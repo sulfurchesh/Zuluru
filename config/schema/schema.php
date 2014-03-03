@@ -204,7 +204,6 @@ class ZuluruSchema extends CakeSchema {
 		'questionnaire_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'division_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'custom' => array('type' => 'text', 'null' => true, 'default' => NULL),
-		'register_rule' => array('type' => 'text', 'null' => true, 'default' => NULL),
 		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'name' => array('column' => 'name', 'unique' => 1)),
 		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
 	);
@@ -535,7 +534,7 @@ class ZuluruSchema extends CakeSchema {
 		'allow_deposit' => array('type' => 'boolean', 'null' => false, 'default' => '0'),
 		'fixed_deposit' => array('type' => 'boolean', 'null' => false, 'default' => '0'),
 		'deposit_only' => array('type' => 'boolean', 'null' => false, 'default' => '0'),
-		'minimum_deposit' => array('type' => 'float', 'null' => true, 'default' => NULL, 'length' => '7,2'),
+		'minimum_deposit' => array('type' => 'float', 'null' => false, 'default' => '0', 'length' => '7,2'),
 		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1)),
 		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
 	);

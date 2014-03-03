@@ -3,9 +3,9 @@ if ($is_logged_in) {
 	if (!empty($photo['Upload'])) {
 		$upload_dir = Configure::read('folders.uploads');
 		if (file_exists ($upload_dir . DS . $photo['Upload']['filename'])) {
-	        echo $this->Html->image("players/" . $upload['person_id'] . ".jpg",
-//			echo $this->Html->image(
-//					Router::url (array('controller' => 'people', 'action' => 'photo', 'person' => $photo['Upload']['person_id'])),
+//			        echo $this->Html->image("players/" . $upload['person_id'] . ".jpg",
+			echo $this->Html->image(
+					Router::url (array('controller' => 'people', 'action' => 'photo', 'person' => $photo['Upload']['person_id']), true),
 					array('class' => 'thumbnail profile_photo', 'title' => "{$person['first_name']} {$person['last_name']}")
 			);
 		}
