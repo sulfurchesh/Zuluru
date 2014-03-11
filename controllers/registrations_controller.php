@@ -5,7 +5,7 @@ class RegistrationsController extends AppController {
 	var $components = array('Questionnaire', 'CanRegister');
 	var $paginate = array(
 		'Registration' => array(
-			'contain' => array('Person'),
+			'contain' => array('Person', 'Payment'),
 			'order' => array('Registration.payment' => 'DESC', 'Registration.created' => 'DESC'),
 		),
 	);
@@ -123,6 +123,7 @@ class RegistrationsController extends AppController {
 		$this->Registration->Event->contain (array(
 			'EventType',
 			'Questionnaire' => array('Question' => array('Answer')),
+			'Price',
 			'Division' => 'League',
 		));
 		$event = $this->Registration->Event->read(null, $id);
@@ -130,13 +131,18 @@ class RegistrationsController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('event', true)), 'default', array('class' => 'info'));
 			$this->redirect(array('controller' => 'events', 'action' => 'index'));
 		}
+		AppModel::_reindexInner($event, 'Price', 'id');
 		$this->Configuration->loadAffiliate($event['Event']['affiliate_id']);
 
 		$event_obj = $this->_getComponent ('EventType', $event['EventType']['type'], $this);
 		$this->_mergeAutoQuestions ($event, $event_obj, $event['Questionnaire'], null, true);
 
 		if ($this->params['url']['ext'] == 'csv') {
-			$this->Registration->contain (array('Person' => $this->Auth->authenticate->name, 'Response'));
+			$this->Registration->contain (array(
+				'Person' => $this->Auth->authenticate->name,
+				'Payment' => 'RegistrationAudit',
+				'Response',
+			));
 			$this->set('registrations', $this->Registration->find ('all', array(
 					'conditions' => array('Registration.event_id' => $id),
 					'order' => array('Registration.payment' => 'DESC', 'Registration.created' => 'DESC'),
@@ -317,6 +323,7 @@ class RegistrationsController extends AppController {
 		$contain = array(
 			'Event' => array('EventType', 'Affiliate'),
 			'Price',
+			'Payment' => 'RegistrationAudit',
 			'Person',
 		);
 		$order = array('Event.affiliate_id', 'Registration.payment' => 'DESC', 'Registration.created');
@@ -750,14 +757,17 @@ class RegistrationsController extends AppController {
 				'Event' => array('EventType'),
 				'Price',
 				'Response',
-				'conditions' => array('payment !=' => 'Refunded'),
+				'conditions' => array('NOT' => array('payment' => Configure::read('registration_cancelled'))),
 			),
 		));
 		$person = $this->Registration->Person->read(null, $person_id);
 		$unregistered = false;
 
 		// Pull out the list of unpaid registrations; these are the ones that might be removed
-		$unpaid = Set::extract ('/Registration[payment!=Paid]/.', $person);
+		$unpaid = array();
+		foreach (Configure::read('registration_none_paid') as $payment) {
+			$unpaid = array_merge($unpaid, Set::extract ("/Registration[payment=$payment]/.", $person));
+		}
 
 		foreach ($unpaid as $key => $registration) {
 			// Check the registration rule, if any
@@ -768,6 +778,9 @@ class RegistrationsController extends AppController {
 				{
 					$this->Registration->delete($registration['id']);
 					$event_obj = $this->_getComponent ('EventType', $registration['Event']['EventType']['type'], $this);
+					if (in_array($registration['payment'], Configure::read('registration_reserved'))) {
+						$event_obj->unpaid($registration, $registration);
+					}
 					$event_obj->unregister($registration, $registration);
 					unset ($person['Registration'][$key]);
 					$unregistered = true;
@@ -1495,9 +1508,6 @@ class RegistrationsController extends AppController {
 		if (!empty($this->data)) {
 			// Adjust data for saving, to prevent shenanigans
 			$this->data['Registration']['id'] = $id;
-			if (!$this->is_admin && !$this->is_manager) {
-				unset($this->data['Registration']['payment']);
-			}
 
 			$this->Registration->Response->validate = array_merge(
 				$this->Questionnaire->validation($registration['Event']['Questionnaire'], true),
@@ -1512,35 +1522,37 @@ class RegistrationsController extends AppController {
 			// Registration->saveAll to validate properly.
 			$this->Registration->Response->set ($data);
 
-			// Find the requested price option
-			$price = Set::extract("/Price[id={$data['Registration']['price_id']}]/.", $registration);
+			if ($registration['Registration']['person_id'] == $this->Auth->user('zuluru_person_id')) {
+				// Find the requested price option
+				$price = Set::extract("/Price[id={$data['Registration']['price_id']}]/.", $registration);
 
-			// Validation of payment data is a manual process
-			if (empty($price)) {
-				$this->Registration->validationErrors['price_id'] = 'Select a valid price option.';
-			} else {
-				$price = reset($price);
-				$cost = $price['cost'] + $price['tax1'] + $price['tax2'];
-				$test = $test['price_allowed'][$price['id']];
-				$this->set(compact('price'));
-				$this->set($test);
-
-				if (!$test['allowed']) {
-					$this->Registration->validationErrors['price_id'] = $test['reason'];
+				// Validation of payment data is a manual process
+				if (empty($price)) {
+					$this->Registration->validationErrors['price_id'] = 'Select a valid price option.';
 				} else {
-					if (!$price['allow_deposit']) {
-						$data['Registration']['payment_type'] = 'Full';
-					} else if ($price['deposit_only'] || $this->data['Registration']['payment_type'] == 'Deposit') {
-						if ($price['fixed_deposit']) {
-							$data['Registration']['deposit_amount'] = $price['minimum_deposit'];
-						} else if ($this->data['Registration']['deposit_amount'] < $price['minimum_deposit']) {
-							$this->Registration->validationErrors['deposit_amount'] = sprintf(__('A minimum deposit of $%s is required.', true), $price['minimum_deposit']);
-						} else if ($this->data['Registration']['deposit_amount'] >= $cost) {
-							$this->Registration->validationErrors['deposit_amount'] = sprintf(__('This deposit exceeds the total cost of $%s.', true), $cost);
+					$price = reset($price);
+					$cost = $price['cost'] + $price['tax1'] + $price['tax2'];
+					$test = $test['price_allowed'][$price['id']];
+					$this->set(compact('price'));
+					$this->set($test);
+
+					if (!$test['allowed']) {
+						$this->Registration->validationErrors['price_id'] = $test['reason'];
+					} else {
+						if (!$price['allow_deposit']) {
+							$data['Registration']['payment_type'] = 'Full';
+						} else if ($price['deposit_only'] || $this->data['Registration']['payment_type'] == 'Deposit') {
+							if ($price['fixed_deposit']) {
+								$data['Registration']['deposit_amount'] = $price['minimum_deposit'];
+							} else if ($this->data['Registration']['deposit_amount'] < $price['minimum_deposit']) {
+								$this->Registration->validationErrors['deposit_amount'] = sprintf(__('A minimum deposit of $%s is required.', true), $price['minimum_deposit']);
+							} else if ($this->data['Registration']['deposit_amount'] >= $cost) {
+								$this->Registration->validationErrors['deposit_amount'] = sprintf(__('This deposit exceeds the total cost of $%s.', true), $cost);
+							}
 						}
-					}
-					if ($data['Registration']['payment_type'] == 'Full') {
-						$data['Registration']['deposit_amount'] = 0;
+						if ($data['Registration']['payment_type'] == 'Full') {
+							$data['Registration']['deposit_amount'] = 0;
+						}
 					}
 				}
 			}
@@ -1558,7 +1570,7 @@ class RegistrationsController extends AppController {
 				$data['Response'] = array_values($data['Response']);
 			}
 
-			if ($is_admin || $is_manager) {
+			if ($this->is_admin || $this->is_manager) {
 				// If the payment status has changed, we may need to do extra processing
 				$paid = Configure::read('registration_paid');
 				$was_paid = in_array ($registration['Registration']['payment'], $paid);
@@ -1631,7 +1643,7 @@ class RegistrationsController extends AppController {
 			}
 
 			if ($transaction->commit() !== false) {
-				if ($is_admin || $is_manager) {
+				if ($this->is_admin || $this->is_manager) {
 					$this->Session->setFlash(sprintf(__('The %s has been saved', true), __('registration', true)), 'default', array('class' => 'success'));
 					$this->redirect(array('controller' => 'people', 'action' => 'registrations', 'person' => $registration['Person']['id']));
 				} else {

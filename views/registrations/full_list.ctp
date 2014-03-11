@@ -16,13 +16,12 @@ $this->Html->addCrumb (__('List', true));
 <div class="index">
 <p>
 <?php
-// TODO: Test when JS is disabled
 $this->Paginator->options(array(
 	'update' => '#RegistrationList',
 	'evalScripts' => true,
 ));
 echo $this->Paginator->counter(array(
-'format' => __('Page %page% of %pages%, showing %current% records out of %count% total, starting on record %start%, ending on %end%', true)
+	'format' => __('Page %page% of %pages%, showing %current% records out of %count% total, starting on record %start%, ending on %end%', true)
 ));
 ?></p>
 <table class="list">
@@ -30,7 +29,12 @@ echo $this->Paginator->counter(array(
 	<th><?php echo $this->Paginator->sort('Order ID', 'id', array('buffer' => false));?></th>
 	<th><?php __('Person'); ?></th>
 	<th><?php echo $this->Paginator->sort('Date', 'created', array('buffer' => false));?></th>
+	<?php if (count($event['Price'] > 0)): ?>
+	<th><?php __('Price Point'); ?></th>
+	<?php endif; ?>
 	<th><?php echo $this->Paginator->sort('payment', null, array('buffer' => false));?></th>
+	<th><?php __('Total Amount'); ?></th>
+	<th><?php __('Amount Paid'); ?></th>
 </tr>
 <?php
 $i = 0;
@@ -53,8 +57,19 @@ foreach ($registrations as $registration):
 		<td>
 			<?php echo $registration['Registration']['created']; ?>
 		</td>
+		<?php if (count($event['Price'] > 0)): ?>
+		<td>
+			<?php echo $event['Price'][$registration['Registration']['price_id']]['name']; ?>
+		</td>
+		<?php endif; ?>
 		<td>
 			<?php echo $registration['Registration']['payment']; ?>
+		</td>
+		<td>
+			<?php echo $registration['Registration']['total_amount']; ?>
+		</td>
+		<td>
+			<?php echo array_sum(Set::extract('/Payment/payment_amount', $registration)); ?>
 		</td>
 	</tr>
 <?php endforeach; ?>
