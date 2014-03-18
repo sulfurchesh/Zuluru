@@ -724,7 +724,8 @@ class AppController extends Controller {
 				}
 			}
 
-			$this->_addMenuItem ('List All', array('controller' => 'people', 'action' => 'index'), 'Players');
+			$this->_addMenuItem ('List all', array('controller' => 'people', 'action' => 'index'), 'Players');
+			$this->_addMenuItem ('Bulk import', array('controller' => 'users', 'action' => 'import'), 'Players');
 
 			$this->_addMenuItem ('Newsletters', array('controller' => 'newsletters', 'action' => 'index'));
 			$this->_addMenuItem ('Upcoming', array('controller' => 'newsletters', 'action' => 'index'), 'Newsletters');
@@ -1216,6 +1217,11 @@ class AppController extends Controller {
 		// If there are no recipients, don't even bother trying to send
 		if (empty($opts['to']) && empty($opts['cc']) && empty($opts['bcc'])) {
 			return (array_key_exists('ignore_empty_address', $opts) && $opts['ignore_empty_address']);
+		}
+
+		// Add any custom headers
+		if (array_key_exists ('header', $opts)) {
+			$email->header($opts['header']);
 		}
 
 		// Get ready and send it
