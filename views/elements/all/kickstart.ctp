@@ -50,7 +50,7 @@ if ($is_admin) {
 
 if ($is_manager) {
 	$my_affiliates = $this->UserCache->read('ManagedAffiliates');
-	if (!empty($my_affiliates)) {
+	if ($is_admin || !empty($my_affiliates)) {
 		$facilities = $this->requestAction(array('controller' => 'facilities', 'action' => 'index'));
 		$facilities = Set::extract('/Facility[id>0]', $facilities);
 		if (empty($facilities)) {
@@ -65,7 +65,7 @@ if ($is_manager) {
 			}
 			if (!empty($facilities)):
 ?>
-<p class="warning-message">The following facilities do not yet have <?php echo Configure::read('ui.fields'); ?>:</p>
+<p class="warning-message">The following facilities are open but do not have any open <?php echo Configure::read('ui.fields'); ?>:</p>
 <table class="list">
 <tr>
 	<th><?php __('Facility'); ?></th>
