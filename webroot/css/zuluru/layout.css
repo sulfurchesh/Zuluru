@@ -54,6 +54,9 @@ body.map
 #zuluru a img
 {
 	border: none;
+	padding: 0;
+	background: transparent;
+	box-shadow: 0;
 }
 #zuluru ol,
 #zuluru ul
@@ -68,6 +71,18 @@ body.map
 .clear
 {
 	clear: both;
+	line-height: 0;
+}
+
+#zuluru div.caption
+{
+	float: left;
+}
+
+#zuluru div.checkout div.caption
+{
+	width: 100px;
+	text-align: center;
 }
 
 /** Specific areas **/
@@ -189,6 +204,7 @@ body.map
 {
 	font-weight: bold;
 	padding-left: 4px;
+	margin-bottom: 0;
 	vertical-align: top;
 }
 #zuluru dd
@@ -494,6 +510,7 @@ div.related
 .ui-tooltip dt
 {
 	line-height: 1.5em;
+	margin-bottom: 0;
 }
 
 .ui-tooltip dd
@@ -525,6 +542,22 @@ div.help_dialog
 div.help_dialog p
 {
 	margin: 1em 0;
+}
+
+div.register_help
+{
+	border: 1px solid #555;
+	padding: 0 10px 0 44px;
+	margin: 0 0 10px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+}
+
+div.register_help img
+{
+	float: left;
+	margin-left: -29px;
 }
 
 /* Live scoring styling. */

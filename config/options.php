@@ -144,6 +144,7 @@ $config['options'] = array(
 		'Cash',
 		'Money Order',
 		'Other',
+		'Credit Redeemed',
 	)),
 
 	'incident_types'		=> make_options(array(
