@@ -128,6 +128,7 @@ $config['options'] = array(
 
 	'payment'				=> make_options(array(
 		'Unpaid',
+		'Reserved',
 		'Pending',
 		'Deposit',
 		'Partial',
@@ -226,6 +227,11 @@ $config['options'] = array(
 		'CAD'				=> 'Canadian',
 		'USD'				=> 'USA',
 	),
+
+	'units' => make_options(array(
+		'Imperial',
+		'Metric',
+	)),
 
 	'membership_types' => array(
 		'full'				=> 'Full',
