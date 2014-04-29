@@ -171,7 +171,7 @@ class GamesController extends AppController {
 				'order' => array('ScoreDetail.created', 'ScoreDetail.id'),
 				'ScoreDetailStat' => array('Person', 'StatType'),
 			),
-			'SpiritEntry',
+			'SpiritEntry' => array('MostSpirited'),
 			'Allstar' => array('Person'),
 			'Incident',
 		);
@@ -328,7 +328,7 @@ class GamesController extends AppController {
 			'AwayPoolTeam' => 'DependencyPool',
 			'ApprovedBy',
 			'ScoreEntry' => array('Person'),
-			'SpiritEntry',
+			'SpiritEntry' => array('MostSpirited'),
 			'Allstar' => array('Person'),
 			'Incident',
 		));
@@ -746,21 +746,11 @@ class GamesController extends AppController {
 		}
 
 		$this->Game->contain (array (
-			'Division' => array(
-				'League',
-				'Person' => array(
-					$this->Auth->authenticate->name,
-					'fields' => array('Person.id', 'Person.first_name', 'Person.last_name', 'email'),
-				),
-			),
-			'GameSlot' => array('Field' => 'Facility'),
+			'Division' => array('League'),
+			'GameSlot',
 			'HomeTeam',
 			'AwayTeam',
-			'ApprovedBy',
-			'ScoreEntry' => array('Person'),
-			'SpiritEntry',
-			'Allstar' => array('Person'),
-			'Incident',
+			'ScoreEntry',
 		));
 		$game = $this->Game->read(null, $id);
 		if (!$game) {
@@ -2009,10 +1999,10 @@ class GamesController extends AppController {
 			),
 			'GameSlot' => array('Field' => 'Facility'),
 			'ScoreEntry' => array('Person' => array('fields' => array('id', 'first_name', 'last_name'))),
-			'SpiritEntry',
+			'SpiritEntry' => array('MostSpirited'),
 			'Incident',
 		);
-		if (Configure::read('scoring.allstars')) {
+		if (Configure::read('scoring.allstars') || Configure::read('scoring.most_spirited')) {
 			// We need roster details for potential allstar nominations.
 			$contain = array_merge($contain, array(
 				'HomeTeam' => array(
@@ -2100,6 +2090,9 @@ class GamesController extends AppController {
 			// form helper checkbox function compares against, using ===
 			$game['Game']['allstar'] = (!empty ($game['Allstar']) ? '1' : '0');
 			$game['Game']['incident'] = (!empty ($game['Incident']) ? '1' : '0');
+		}
+		if (!empty($game['SpiritEntry'][$opponent['id']]['most_spirited'])) {
+			$game['SpiritEntry'][$opponent['id']]['has_most_spirited'] = '1';
 		}
 
 		// We need this in a couple of places
@@ -2195,6 +2188,10 @@ class GamesController extends AppController {
 				unset ($this->data['Allstar']);
 			}
 
+			if (!Configure::read('scoring.most_spirited') || $game['Division']['allstars'] == 'never') {
+				unset ($this->data['SpiritEntry']['most_spirited']);
+			}
+
 			// Remove blank incident reports, as they will cause insertion errors
 			if (Configure::read('scoring.incident_reports') &&
 				array_key_exists ('incident', $this->data['Game']) &&
@@ -2286,6 +2283,9 @@ class GamesController extends AppController {
 							$team_status = __('a tie', true);
 							$opponent_status = sprintf(__('a %s-%s tie', true), $score_for, $score_against);
 						}
+
+						// We need to swap the for and against scores to reflect the opponent's view in the email below
+						list($score_against, $score_for) = array($score_for, $score_against);
 					}
 					$resultMessage = sprintf(__('This score has been saved. Once your opponent has entered their score, it will be officially posted.<br/><br/>The score you have submitted indicates that this game was %s. If this is incorrect, you can edit the score to correct it.', true), $team_status);
 					$resultClass = 'success';
@@ -2297,8 +2297,6 @@ class GamesController extends AppController {
 					}
 					if (!empty($captains)) {
 						$division = $game['Division'];
-						// We need to swap the for and against scores to reflect the opponent's view
-						list($score_against, $score_for) = array($score_for, $score_against);
 						$this->set(compact ('division', 'game', 'status', 'opponent_status', 'score_for', 'score_against', 'team', 'opponent', 'captains'));
 						$this->_sendMail (array (
 								'to' => $captains,

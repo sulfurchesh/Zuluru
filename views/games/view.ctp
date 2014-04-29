@@ -19,7 +19,11 @@ $preliminary = ($game['Game']['home_team'] === null || ($game['Division']['sched
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 		<?php
 		if ($game['Game']['home_team'] === null) {
-			echo $game['Game']['home_dependency'];
+			if (array_key_exists ('home_dependency', $game['Game'])) {
+				echo $game['Game']['home_dependency'];
+			} else {
+				__('Unassigned');
+			}
 			$game['HomeTeam']['Person'] = array();
 		} else {
 			echo $this->element('teams/block', array('team' => $game['HomeTeam']));
@@ -43,7 +47,11 @@ $preliminary = ($game['Game']['home_team'] === null || ($game['Division']['sched
 	<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 		<?php
 		if ($game['Game']['away_team'] === null) {
-			echo $game['Game']['away_dependency'];
+			if (array_key_exists ('away_dependency', $game['Game'])) {
+				echo $game['Game']['away_dependency'];
+			} else {
+				__('Unassigned');
+			}
 			$game['AwayTeam']['Person'] = array();
 		} else {
 			echo $this->element('teams/block', array('team' => $game['AwayTeam']));
@@ -423,9 +431,9 @@ if (League::hasSpirit($game) &&
 	($is_admin || $is_coordinator || ($homeSpiritEntry !== null && $awaySpiritEntry !== null)))
 {
 	echo $this->element ('spirit/view',
-			array('team' => $game['HomeTeam'], 'league' => $game['Division']['League'], 'spirit' => $homeSpiritEntry, 'spirit_obj' => $spirit_obj));
+			array('team' => $game['HomeTeam'], 'league' => $game['Division']['League'], 'division' => $game['Division'], 'spirit' => $homeSpiritEntry, 'spirit_obj' => $spirit_obj));
 	echo $this->element ('spirit/view',
-			array('team' => $game['AwayTeam'], 'league' => $game['Division']['League'], 'spirit' => $awaySpiritEntry, 'spirit_obj' => $spirit_obj));
+			array('team' => $game['AwayTeam'], 'league' => $game['Division']['League'], 'division' => $game['Division'], 'spirit' => $awaySpiritEntry, 'spirit_obj' => $spirit_obj));
 }
 ?>
 

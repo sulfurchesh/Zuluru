@@ -852,6 +852,7 @@ class TeamsController extends AppController {
 			$this->redirect(array('action' => 'index'));
 		}
 		$is_captain = in_array($id, $this->UserCache->read('OwnedTeamIDs'));
+		$this->_limitOverride($id);
 
 		$person_id = $this->_arg('person');
 		if ($person_id) {
@@ -866,7 +867,6 @@ class TeamsController extends AppController {
 			$this->redirect(array('action' => 'view', 'team' => $id));
 		}
 
-		$this->_limitOverride($id);
 		usort ($team['Person'], array('Team', 'compareRoster'));
 
 		$this->set(compact('team', 'is_captain', 'person_id', 'person'));
@@ -1166,7 +1166,11 @@ class TeamsController extends AppController {
 				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('team', true)), 'default', array('class' => 'info'));
 				$this->redirect(array('action' => 'index'));
 			}
-			$this->Configuration->loadAffiliate($this->data['Division']['League']['affiliate_id']);
+			if (empty($this->data['Division']['id'])) {
+				$this->Configuration->loadAffiliate($this->data['Team']['affiliate_id']);
+			} else {
+				$this->Configuration->loadAffiliate($this->data['Division']['League']['affiliate_id']);
+			}
 		}
 		$division_id = $this->Team->field('division_id', array('id' => $id));
 		$league_id = $this->Team->Division->field('league_id', array('id' => $division_id));
@@ -1242,7 +1246,11 @@ class TeamsController extends AppController {
 				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('team', true)), 'default', array('class' => 'info'));
 				$this->redirect(array('action' => 'index'));
 			}
-			$this->Configuration->loadAffiliate($this->data['Division']['League']['affiliate_id']);
+			if (empty($this->data['Division']['id'])) {
+				$this->Configuration->loadAffiliate($this->data['Team']['affiliate_id']);
+			} else {
+				$this->Configuration->loadAffiliate($this->data['Division']['League']['affiliate_id']);
+			}
 		}
 
 		if (Configure::read('feature.tiny_mce')) {
@@ -1445,11 +1453,22 @@ class TeamsController extends AppController {
 
 		$this->Team->contain(array ('Division' => 'League'));
 		$team = $this->Team->read(null, $id);
+		if (!$team) {
+			$this->Team->contain(array ('Division' => 'League'));
+			$team = $this->Team->read(null, $id + 5000); // OCUA import offset
+			if ($team) {
+				$this->redirect(array('action' => 'ical', $id + 5000), 301);
+			}
+		}
 		if (!$team || empty($team['Division']['id']) || strtotime($team['Division']['close']) < time() - 14 * DAY) {
 			$this->header('HTTP/1.1 410 Gone');
 			exit;
 		} else {
-			$this->Configuration->loadAffiliate($team['Division']['League']['affiliate_id']);
+			if (empty($team['Division']['id'])) {
+				$this->Configuration->loadAffiliate($team['Team']['affiliate_id']);
+			} else {
+				$this->Configuration->loadAffiliate($team['Division']['League']['affiliate_id']);
+			}
 		}
 		$this->Team->Division->Game->contain(array(
 				'GameSlot' => array('Field' => 'Facility'),
@@ -1577,6 +1596,10 @@ class TeamsController extends AppController {
 
 		$dates = array();
 		$days = Set::extract('/Division/Day/id', $team);
+		if (empty($days)) {
+			$this->Session->setFlash(__('This division does not have a day of play selected.', true), 'default', array('class' => 'info'));
+			$this->redirect(array('action' => 'view', 'team' => $id));
+		}
 		$play_day = min($days);
 		for ($date = strtotime ($team['Division']['open']); $date <= strtotime ($team['Division']['close']) + DAY - 1; $date += DAY) {
 			$day = date('w', $date) + 1;
@@ -2080,8 +2103,11 @@ class TeamsController extends AppController {
 		// user why. It should only fail in the case of malicious form tinkering, so
 		// we don't try hard to let them correct the error.
 		if (!empty($this->data)) {
-			$this->_setRosterRole ($person, $team, $this->data['Person']['role'], ROSTER_INVITED);
-			$this->redirect(array('action' => 'view', 'team' => $team['Team']['id']));
+			if (!empty($this->data['Person']['role'])) {
+				$this->_setRosterRole ($person, $team, $this->data['Person']['role'], ROSTER_INVITED);
+				$this->redirect(array('action' => 'view', 'team' => $team['Team']['id']));
+			}
+			$this->Session->setFlash(__('You must select a role for this player.', true), 'default', array('class' => 'info'));
 		}
 
 		// Check if this person can even be added

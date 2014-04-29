@@ -1381,6 +1381,12 @@ class PeopleController extends AppController {
 				$this->Session->setFlash(__('There was an unexpected error uploading the file. Please try again.', true), 'default', array('class' => 'warning'));
 				return;
 			}
+			$ext = strtolower(substr($this->data['image']['name'], strrpos($this->data['image']['name'], '.') + 1));
+			if (!in_array($ext, array('gif', 'jpg', 'jpeg', 'png'))) {
+				$this->log($this->data, 'upload');
+				$this->Session->setFlash(__('Supported formats are PNG, JPEG and GIF.', true), 'default', array('class' => 'warning'));
+				return;
+			}
 
 			// Image was uploaded, ask user to crop it
 			$rand = mt_rand();
@@ -1747,6 +1753,7 @@ class PeopleController extends AppController {
 		if (!empty($this->data)) {
 			if ($this->Person->Upload->save($this->data)) {
 				// Read updated version
+				$this->Person->Upload->contain(array('Person' => $this->Auth->authenticate->name, 'UploadType'));
 				$document = $this->Person->Upload->read (null, $id);
 				$this->set(compact('document'));
 				$this->Session->setFlash(sprintf (__('Updated %s', true), __('document', true)), 'default', array('class' => 'success'));
@@ -1928,10 +1935,10 @@ class PeopleController extends AppController {
 			if ($badge['Badge']['active']) {
 				// TODO: Allow multiple copies of the badge?
 				$this->Session->setFlash(__('This player already has this badge', true), 'default', array('class' => 'info'));
-				$this->redirect(array('action' => 'add', 'badge' => $url['badge']));
+				$this->redirect(array('action' => 'nominate_badge', 'badge' => $badge_id));
 			} else {
 				$this->Session->setFlash(__('This player has already been nominated for this badge', true), 'default', array('class' => 'info'));
-				$this->redirect(array('action' => 'add', 'badge' => $url['badge']));
+				$this->redirect(array('action' => 'nominate_badge', 'badge' => $badge_id));
 			}
 		}
 		$this->set(compact('badge'));
