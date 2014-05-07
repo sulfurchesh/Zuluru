@@ -301,12 +301,14 @@ class ZuluruSchema extends CakeSchema {
 		'home_dependency_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'home_pool_team_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'home_team' => array('type' => 'integer', 'null' => true, 'default' => NULL, 'key' => 'index'),
+		'home_field_rank' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'away_dependency_type' => array('type' => 'string', 'null' => true, 'default' => NULL, 'length' => 32),
 		'away_dependency_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'away_pool_team_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'away_team' => array('type' => 'integer', 'null' => true, 'default' => NULL, 'key' => 'index'),
 		'home_score' => array('type' => 'integer', 'null' => true, 'default' => NULL, 'length' => 4),
 		'away_score' => array('type' => 'integer', 'null' => true, 'default' => NULL, 'length' => 4),
+		'away_field_rank' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'rating_points' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'approved_by' => array('type' => 'integer', 'null' => true, 'default' => NULL),
 		'status' => array('type' => 'string', 'null' => false, 'default' => 'normal', 'length' => 32),
@@ -802,6 +804,14 @@ class ZuluruSchema extends CakeSchema {
 		'location_city' => array('type' => 'string', 'null' => true, 'default' => NULL, 'length' => 50),
 		'location_province' => array('type' => 'string', 'null' => true, 'default' => NULL, 'length' => 50),
 		'created' => array('type' => 'datetime', 'null' => true, 'default' => NULL),
+		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'team' => array('column' => 'team_id', 'unique' => 0)),
+		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
+	);
+	var $teams_facilities = array(
+		'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
+		'team_id' => array('type' => 'integer', 'null' => false, 'default' => '0', 'key' => 'index'),
+		'facility_id' => array('type' => 'integer', 'null' => false, 'default' => '0'),
+		'rank' => array('type' => 'integer', 'null' => false, 'default' => '0'),
 		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'team' => array('column' => 'team_id', 'unique' => 0)),
 		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
 	);

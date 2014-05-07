@@ -135,7 +135,16 @@ class Team extends AppModel {
 			'associationForeignKey' => 'franchise_id',
 			'unique' => true,
 			'order' => 'Franchise.name',
-		)
+		),
+		'Facility' => array(
+			'className' => 'Facility',
+			'joinTable' => 'teams_facilities',
+			'with' => 'TeamsFacility',
+			'foreignKey' => 'team_id',
+			'associationForeignKey' => 'facility_id',
+			'unique' => true,
+			'order' => 'TeamsFacility.rank',
+		),
 	);
 
 	function beforeValidate() {

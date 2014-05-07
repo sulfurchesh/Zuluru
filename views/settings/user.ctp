@@ -18,164 +18,94 @@ echo $this->ZuluruForm->create('Settings', array(
 echo $this->element('settings/banner');
 ?>
 	<fieldset>
-		<legend><?php __('Profile Requirements'); ?></legend>
+		<legend><?php __('User Features'); ?></legend>
 	<?php
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'first_name',
+		'category' => 'feature',
+		'name' => 'auto_approve',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_required'),
+			'options' => Configure::read('options.enable'),
+			'label' => 'Automatically approve new user accounts',
+			'after' => 'By enabling this, you reduce administrative work and minimize delays for users. However, you also lose the ability to detect and eliminate duplicate accounts. <span class="warning-message">Use of this feature is recommended only for brand new sites wanting to ease the transition for their members.</span>',
 		),
 	));
+	if (!$affiliate) {
+		echo $this->element('settings/input', array(
+			'category' => 'feature',
+			'name' => 'multiple_affiliates',
+			'options' => array(
+				'type' => 'radio',
+				'options' => Configure::read('options.enable'),
+				'label' => 'Enable joining multiple affiliates',
+				'after' => sprintf('Allow users to join multiple affiliates (only applicable if affiliates are enabled above).'),
+			),
+		));
+	}
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'last_name',
+		'category' => 'feature',
+		'name' => 'photos',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_required'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'gender',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_required'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'addr_street',
-		'options' => array(
-			'type' => 'radio',
-			'label' => 'Street Address',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'addr_city',
-		'options' => array(
-			'type' => 'radio',
-			'label' => 'City',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'addr_prov',
-		'options' => array(
-			'type' => 'radio',
-			'label' => 'Province',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'addr_country',
-		'options' => array(
-			'type' => 'radio',
-			'label' => 'Country',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'addr_postalcode',
-		'options' => array(
-			'type' => 'radio',
-			'label' => 'Postal Code',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'home_phone',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'work_phone',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'mobile_phone',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'skill_level',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'year_started',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
-		),
-	));
-	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'birthdate',
-		'options' => array(
-			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
+			'options' => Configure::read('options.enable'),
+			'after' => 'Enable or disable the option for players to upload profile photos.',
 		),
 	));
 	echo $this->element('settings/input', array(
 		'category' => 'feature',
-		'name' => 'birth_year_only',
+		'name' => 'approve_photos',
 		'options' => array(
 			'type' => 'radio',
 			'options' => Configure::read('options.enable'),
-			'after' => 'If enabled, the system will not ask for birth month and day.',
+			'after' => 'If enabled, profile photos must be approved by an administrator before they will be visible.',
 		),
 	));
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'height',
+		'category' => 'feature',
+		'name' => 'gravatar',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
+			'options' => Configure::read('options.enable'),
+			'after' => 'Enable or disable the option for players to use Gravatar for their photo.',
 		),
 	));
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'shirt_size',
+		'category' => 'feature',
+		'name' => 'documents',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
+			'options' => Configure::read('options.enable'),
+			'label' => 'Handle document uploads',
+			'after' => 'Enable or disable uploading of documents by players (e.g. as an alternative to faxing or emailing).',
 		),
 	));
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'willing_to_volunteer',
+		'category' => 'feature',
+		'name' => 'annotations',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
+			'options' => Configure::read('options.enable'),
+			'label' => 'Enable annotations',
+			'after' => sprintf('Allow players to attach notes to other players, teams, games and %s.', Configure::read('ui.fields')),
 		),
 	));
 	echo $this->element('settings/input', array(
-		'category' => 'profile',
-		'name' => 'contact_for_feedback',
+		'category' => 'feature',
+		'name' => 'tasks',
 		'options' => array(
 			'type' => 'radio',
-			'options' => Configure::read('options.access_optional'),
+			'options' => Configure::read('options.enable'),
+			'label' => 'Enable tasks',
+			'after' => 'Enable or disable the management and assignment of tasks.',
+		),
+	));
+	echo $this->element('settings/input', array(
+		'category' => 'feature',
+		'name' => 'dog_questions',
+		'options' => array(
+			'type' => 'radio',
+			'options' => Configure::read('options.enable'),
+			'after' => 'Enable or disable questions and options about dogs.',
 		),
 	));
 	?>

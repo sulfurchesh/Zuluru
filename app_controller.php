@@ -752,7 +752,9 @@ class AppController extends Controller {
 			$this->_addMenuItem ('Organization', array('controller' => 'settings', 'action' => 'organization'), array('Configuration', 'Settings'));
 			$this->_addMenuItem ('Features', array('controller' => 'settings', 'action' => 'feature'), array('Configuration', 'Settings'));
 			$this->_addMenuItem ('Email', array('controller' => 'settings', 'action' => 'email'), array('Configuration', 'Settings'));
-			$this->_addMenuItem ('Users', array('controller' => 'settings', 'action' => 'user'), array('Configuration', 'Settings'));
+			$this->_addMenuItem ('Team', array('controller' => 'settings', 'action' => 'team'), array('Configuration', 'Settings'));
+			$this->_addMenuItem ('User', array('controller' => 'settings', 'action' => 'user'), array('Configuration', 'Settings'));
+			$this->_addMenuItem ('Profile', array('controller' => 'settings', 'action' => 'profile'), array('Configuration', 'Settings'));
 			$this->_addMenuItem ('Scoring', array('controller' => 'settings', 'action' => 'scoring'), array('Configuration', 'Settings'));
 			if (Configure::read('feature.registration')) {
 				$this->_addMenuItem ('Registration', array('controller' => 'settings', 'action' => 'registration'), array('Configuration', 'Settings'));
@@ -1447,7 +1449,7 @@ class AppController extends Controller {
 			if ($registration['Registration']['delete_on_expiry']) {
 				// This reservation was created from the waiting list, and should be deleted
 				$new_payment = 'Deleted';
-				$event_obj->unregister($event, $registration);
+				$event_obj->unregister($registration, $registration);
 			} else if ($status != 'Unpaid') {
 				$this->Registration->id = $registration['Registration']['id'];
 				$this->Registration->saveField('payment', $status);

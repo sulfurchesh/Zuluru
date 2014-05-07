@@ -138,7 +138,7 @@
 				// an item has been selected on the regular select we created
 				// check to make sure it's not an IE screwup, and add it to the list
 
-				if($.browser.msie && $.browser.version < 7 && !ieClick) return;
+				if($.browser && $.browser.msie && $.browser.version < 7 && !ieClick) return;
 				var id = $(this).find("option:selected").slice(0,1).attr('rel');
 				addListItem(id);
 				ieClick = false;
@@ -251,7 +251,7 @@
 					.prop("disabled", true);
 
 				if(options.hideWhenAdded) $option.hide();
-				if($.browser.msie) $select.hide().show(); // this forces IE to update display
+				if($.browser && $.browser.msie) $select.hide().show(); // this forces IE to update display
 			}
 
 			function enableSelectOption($option) {
@@ -262,7 +262,7 @@
 					.prop("disabled", false);
 
 				if(options.hideWhenAdded) $option.show();
-				if($.browser.msie) $select.hide().show(); // this forces IE to update display
+				if($.browser && $.browser.msie) $select.hide().show(); // this forces IE to update display
 			}
 
 			function addListItem(optionId) {
@@ -301,6 +301,19 @@
 				if(options.addItemTarget == 'top' && !buildingSelect) {
 					$ol.prepend($item);
 					if(options.sortable) $original.prepend($O);
+				} else if (buildingSelect && options.sortable) {
+					if($ol.children().length == 0 || $ol.children().last().attr('rel') < optionId) {
+						$ol.append($item);
+						$original.append($O);
+					} else {
+						$ol.children().each(function(){
+							if ($(this).attr('rel') > optionId) {
+								$(this).before($item);
+								$('#' + $(this).attr('rel')).before($O);
+								return false;
+							}
+						});
+					}
 				} else {
 					$ol.append($item);
 					if(options.sortable) $original.append($O);

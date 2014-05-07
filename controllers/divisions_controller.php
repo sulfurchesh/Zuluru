@@ -707,7 +707,7 @@ class DivisionsController extends AppController {
 		} else {
 			$this->Division->contain(array (
 				'Day' => array('order' => 'day_id'),
-				'Team',
+				'Team' => 'Facility',
 				'League',
 				'Game' => array(
 					'conditions' => array(
@@ -767,7 +767,7 @@ class DivisionsController extends AppController {
 		// Save posted data
 		if (!empty ($this->data) && ($this->is_admin || $is_manager || $is_coordinator)) {
 			if ($this->Lock->lock ('scheduling', $this->Division->affiliate($id), 'schedule creation or edit')) {
-				$ret = $this->Division->Game->_validateAndSaveSchedule($this->data, $game_slots);
+				$ret = $this->Division->Game->_validateAndSaveSchedule($this->data, $game_slots, $division['Team']);
 				if ($ret === true) {
 					$this->Session->setFlash(__('Schedule changes saved!', true), 'default', array('class' => 'success'));
 				} else {
@@ -1554,8 +1554,8 @@ class DivisionsController extends AppController {
 		if ($date) {
 			$multi_day = ($division['Division']['schedule_type'] != 'tournament' && count($division['Day']) > 1);
 			if ($multi_day) {
-				// TODO: Configurable first day of the week; this assumes Sunday
-				$offset = 6 - date('w', strtotime($date));
+				$first_day = Configure::read('organization.first_day');
+				$offset = (6 + $first_day - date('N', strtotime($date))) % 7;
 				$end = date('Y-m-d', strtotime($date) + $offset * DAY);
 				$games = Set::extract("/GameSlot[game_date>=$date][game_date<=$end]/..", $games);
 			} else {
