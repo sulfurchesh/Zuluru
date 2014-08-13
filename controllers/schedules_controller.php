@@ -641,7 +641,7 @@ class SchedulesController extends AppController {
 		));
 
 		if ($this->_numTeams() <= $games * 2 && !$this->data['Game']['double_header'] &&
-			$division['Division']['schedule_type'] != 'tournament' && !$this->_arg('playoff'))
+			$division['Division']['schedule_type'] != 'tournament' && !$this->_arg('playoff') && empty($this->data['Game']['pool_id']))
 		{
 			$this->Session->setFlash(__('This division is already fully scheduled on the selected date.', true), 'default', array('class' => 'info'));
 			return false;
@@ -917,7 +917,9 @@ class SchedulesController extends AppController {
 
 		$this->Division->contain (array (
 			'League',
-			'Team',
+			'Team' => array(
+				'Facility',
+			),
 			'Day' => array('order' => 'day_id'),
 			'Game' => array(
 				'GameSlot' => array(
@@ -932,6 +934,7 @@ class SchedulesController extends AppController {
 						'game_date >=' => $date,
 						'assigned' => false,
 					),
+					'Field' => 'Facility',
 				),
 			),
 		));

@@ -33,11 +33,6 @@ if (isset ($person_id)) {
 	echo $this->Form->hidden("Setting.$id.person_id", array('value' => $person_id));
 }
 
-if (array_key_exists ('label', $options)) {
-	$options['label'] = __($options['label'], true);
-} else {
-	$options['label'] = __(Inflector::humanize ($name), true);
-}
 if (!array_key_exists ('type', $options)) {
 	$options['type'] = 'text';
 }
@@ -75,7 +70,7 @@ if (file_exists($help_file)) {
 	}
 }
 if (array_key_exists ('after', $options)) {
-	$options['after'] = $this->Html->para(null, __($options['after'], true));
+	$options['after'] = $this->Html->para(null, $options['after']);
 }
 
 if ($options['type'] == 'textarea') {

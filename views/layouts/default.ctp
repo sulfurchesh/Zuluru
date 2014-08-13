@@ -1,3 +1,9 @@
+<?php
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+?>
 <?php echo $this->Html->doctype('xhtml-trans'); ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -23,6 +29,14 @@
 		if (Configure::read('debug')) {
 			echo $this->ZuluruHtml->css(array ('zuluru/debug'));
 		}
+		$language = Configure::read('personal.language');
+		if (Configure::read('feature.uls') && empty($language)) {
+			echo $this->ZuluruHtml->css(array (
+					'uls/jquery.uls.css',
+					'uls/jquery.uls.grid.css',
+					'uls/jquery.uls.lcd.css',
+			));
+		}
 	?>
 <!--[if lt IE 8]>
 <?php echo $this->ZuluruHtml->css('zuluru/ie_fixes'); ?>
@@ -44,6 +58,25 @@
 			));
 			echo $this->Html->scriptBlock('jQuery.noConflict();');
 		}
+		if (Configure::read('feature.uls') && empty($language)) {
+			echo $this->ZuluruHtml->script(array(
+					'jquery.uls/src/jquery.uls.data.js',
+					'jquery.uls/src/jquery.uls.data.utils.js',
+					'jquery.uls/src/jquery.uls.lcd.js',
+					'jquery.uls/src/jquery.uls.languagefilter.js',
+					'jquery.uls/src/jquery.uls.regionfilter.js',
+					'jquery.uls/src/jquery.uls.core.js',
+			));
+			echo $this->Js->buffer('
+				jQuery(".uls-trigger").uls({
+					onSelect : function(language) {
+						window.location = "' . $this->Html->url(array('controller' => 'all', 'action' => 'language'), true) . '/lang:" + language + "/return:1";
+					},
+					languages: {' . Configure::read('available_translation_strings') . '}
+				});
+			');
+		}
+
 		echo $scripts_for_layout;
 	?>
 	<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;" />
@@ -54,6 +87,9 @@
 		<div class="crumbs">
 			<?php echo $this->Html->getCrumbs(' &raquo; '); ?>
 
+			<?php if (Configure::read('feature.uls') && empty($language)): ?>
+			<span style="float: right;" class="uls-trigger"><?php echo Configure::read('Config.language_name'); ?></span>
+			<?php endif; ?>
 		</div>
 		<table class="container"><tr>
 		<td class="sidebar-left">
@@ -74,6 +110,7 @@
 		</div>
 		</td>
 		</tr></table>
+<?php echo $this->element('layout/footer'); ?>
 		<hr noshade="noshade" />
 		<p><i>Powered by <a href="http://zuluru.org/"><?php echo ZULURU; ?></a>, version <?php echo ZULURU_MAJOR . '.' . ZULURU_MINOR . '.' . ZULURU_REVISION; ?> | <?php
 		$body = htmlspecialchars ("I found a bug in http://{$_SERVER['HTTP_HOST']}{$this->here}");

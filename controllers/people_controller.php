@@ -1007,11 +1007,14 @@ class PeopleController extends AppController {
 		$setting = ClassRegistry::init('Setting');
 		if (!empty($this->data)) {
 			if ($setting->saveAll ($this->data['Setting'], array('validate' => false))) {
-				$this->Session->setFlash(sprintf(__('The %s have been saved', true), __('preferences', true)), 'default', array('class' => 'success'));
 				// Reload the configuration right away, so it affects any rendering we do now,
 				// and rebuild the menu based on any changes.
 				$this->Configuration->load($my_id);
+				$this->_setLanguage();
+				Configure::Load('features');
+				Configure::Load('options');
 				$this->_initMenu();
+				$this->Session->setFlash(sprintf(__('The %s have been saved', true), __('preferences', true)), 'default', array('class' => 'success'));
 			} else {
 				$this->Session->setFlash(__('Failed to save your preferences', true), 'default', array('class' => 'warning'));
 			}
@@ -1043,7 +1046,7 @@ class PeopleController extends AppController {
 				}
 
 				if (in_array($relative_id, $this->UserCache->read('RelativeIDs', $person_id))) {
-					$this->Session->setFlash(__("{$relative['full_name']} is already your relative", true), 'default', array('class' => 'info'));
+					$this->Session->setFlash(sprintf(__('%s is already your relative.', true), $relative['full_name']), 'default', array('class' => 'info'));
 				} else {
 					if ($this->Person->PeoplePerson->save(compact('person_id', 'relative_id'), array('validate' => false))) {
 						$this->set(compact('relative'));
@@ -1069,10 +1072,10 @@ class PeopleController extends AppController {
 						$this->UserCache->clear('RelativeIDs', $person_id);
 						$this->UserCache->clear('RelatedTo', $relative_id);
 						$this->UserCache->clear('RelatedToIDs', $relative_id);
-						$this->Session->setFlash(__("Added {$relative['full_name']} as relative; you will not have access to their information until they have approved this", true), 'default', array('class' => 'success'));
+						$this->Session->setFlash(sprintf(__('Added %s as relative; you will not have access to their information until they have approved this.', true), $relative['full_name']), 'default', array('class' => 'success'));
 						$this->redirect('/');
 					} else {
-						$this->Session->setFlash(__("Failed to add {$relative['full_name']} as relative", true), 'default', array('class' => 'warning'));
+						$this->Session->setFlash(sprintf(__('Failed to add %s as relative.', true), $relative['full_name']), 'default', array('class' => 'warning'));
 						$this->redirect(array('action' => 'add_relative', 'person' => $person_id));
 					}
 				}
@@ -2259,7 +2262,7 @@ class PeopleController extends AppController {
 			// Handle the rule
 			$rule_obj = AppController::_getComponent ('Rule', '', $this, true);
 			if (!$rule_obj->init ($params['rule'])) {
-				$this->set('error', 'Failed to parse the rule.');
+				$this->set('error', __('Failed to parse the rule.', true));
 				return;
 			}
 			if (!array_key_exists('rule64', $params)) {
@@ -2271,7 +2274,7 @@ class PeopleController extends AppController {
 
 			$people = $rule_obj->query($params['rule']);
 			if ($people === null) {
-				$this->set('error', 'The syntax of the rule is valid, but it is not possible to build a query which will return the expected results. See the "rules engine" help for suggestions.');
+				$this->set('error', __('The syntax of the rule is valid, but it is not possible to build a query which will return the expected results. See the "rules engine" help for suggestions.', true));
 				return;
 			}
 
@@ -2303,7 +2306,7 @@ class PeopleController extends AppController {
 				));
 				$this->set('people', $this->paginate('Person'));
 			} else {
-				$this->set('error', 'No matches found!');
+				$this->set('error', __('No matches found!', true));
 			}
 		}
 	}
