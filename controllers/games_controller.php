@@ -3097,6 +3097,7 @@ class GamesController extends AppController {
 				),
 				'Game.published' => true,
 				'GameSlot.game_date < CURDATE()',
+				'GameSlot.game_date >= DATE_ADD(CURDATE(), INTERVAL -14 DAY)',
 			),
 			'contain' => array(
 				'Division' => array('Day', 'League'),
@@ -3139,6 +3140,7 @@ class GamesController extends AppController {
 				),
 				'Game.published' => true,
 				'GameSlot.game_date >= CURDATE()',
+				'GameSlot.game_date < DATE_ADD(CURDATE(), INTERVAL 14 DAY)',
 			),
 			'contain' => array(
 				'Division' => array('Day', 'League'),
