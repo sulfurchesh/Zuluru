@@ -1337,6 +1337,7 @@ class DivisionsController extends AppController {
 			'SpiritEntry' => 'MostSpirited',
 			'HomeTeam',
 			'AwayTeam',
+			'Incident',
 		));
 		$division['Game'] = $this->Division->Game->find('all', array(
 			'order' => 'Game.id',

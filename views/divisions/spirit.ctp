@@ -313,15 +313,24 @@ foreach ($division['Game'] as $game) {
 				if (!empty ($entry['comments'])) {
 					$rows[] = array(
 							array(__('Comment for entry above:', true), array('colspan' => 2)),
-							array($entry['comments'], array('colspan' => $colcount - 2)),
+							array($entry['comments'], array('class' => 'spirit_comments', 'colspan' => $colcount - 2)),
 					);
 				}
 				if (!empty ($entry['highlights'])) {
 					$rows[] = array(
 							array(__('Highlight for entry above:', true), array('colspan' => 2)),
-							array($entry['highlights'], array('colspan' => $colcount - 2)),
+							array($entry['highlights'], array('class' => 'spirit_highlights', 'colspan' => $colcount - 2)),
 					);
 				}
+			}
+		}
+		foreach ($game['Incident'] as $incident) {
+			if ($incident['team_id'] == $game[$team]['id']) {
+				$rows[] = array(
+						__('Incident for entry above:', true),
+						$incident['type'],
+						array($incident['details'], array('class' => 'spirit_incident', 'colspan' => $colcount - 2)),
+				);
 			}
 		}
 	}
