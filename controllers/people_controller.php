@@ -42,13 +42,22 @@ class PeopleController extends AppController {
 				'document_upload',
 				'registrations',
 				'credits',
+				'act_as',
 		)))
 		{
 			// If a player id is specified, check if it's the logged-in user, or a relative
 			// If no player id is specified, it's always the logged-in user
 			$person = $this->_arg('person');
 			$relatives = $this->UserCache->read('RelativeIDs');
-			if (!$person || $person == $this->Auth->user('zuluru_person_id') || in_array($person, $relatives)) {
+			if (!$person || $person == $this->UserCache->currentId() || in_array($person, $relatives)) {
+				return true;
+			}
+		}
+
+		// People can always act as their real id
+		if ($this->params['action'] == 'act_as') {
+			// If a player id is specified, check if it's the real user
+			if ($this->_arg('person') == $this->UserCache->realId()) {
 				return true;
 			}
 		}
@@ -96,6 +105,7 @@ class PeopleController extends AppController {
 				'waivers',
 				'approve_badge',
 				'delete_badge',
+				'act_as',
 			)))
 			{
 				// If a person id is specified, check if we're a manager of that person's affiliate
@@ -197,21 +207,6 @@ class PeopleController extends AppController {
 				'recursive' => -1,
 		));
 
-		// Get the list of accounts by group
-		$group_count = $this->Person->find('all', array(
-				'fields' => array(
-					'Affiliate.*',
-					'Person.group_id',
-					'COUNT(Person.id) AS count',
-				),
-				'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
-				'joins' => $joins,
-				'group' => array('AffiliatePerson.affiliate_id', 'Person.group_id'),
-				'order' => array('Affiliate.name', 'Person.group_id'),
-				'recursive' => -1,
-		));
-		$groups = $this->Person->Group->find('list');
-
 		// Get the list of accounts by gender
 		$gender_count = $this->Person->find('all', array(
 				'fields' => array(
@@ -294,7 +289,36 @@ class PeopleController extends AppController {
 			));
 		}
 
-		$this->set(compact('status_count', 'groups', 'group_count', 'gender_count',
+		// Get the list of accounts by group
+		$joins[] = array(
+			'table' => "{$this->Person->tablePrefix}groups_people",
+			'alias' => 'GroupPerson',
+			'type' => 'LEFT',
+			'foreignKey' => false,
+			'conditions' => 'GroupPerson.person_id = Person.id',
+		);
+		$joins[] = array(
+			'table' => "{$this->Person->tablePrefix}groups",
+			'alias' => 'Group',
+			'type' => 'LEFT',
+			'foreignKey' => false,
+			'conditions' => 'Group.id = GroupPerson.group_id',
+		);
+
+		$group_count = $this->Person->find('all', array(
+				'fields' => array(
+					'Affiliate.*',
+					'Group.*',
+					'COUNT(Person.id) AS count',
+				),
+				'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
+				'joins' => $joins,
+				'group' => array('AffiliatePerson.affiliate_id', 'Group.id'),
+				'order' => array('Affiliate.name', 'Group.id'),
+				'recursive' => -1,
+		));
+
+		$this->set(compact('status_count', 'group_count', 'gender_count',
 				'age_count', 'started_count', 'skill_count', 'city_count'));
 	}
 
@@ -541,7 +565,7 @@ class PeopleController extends AppController {
 	function view() {
 		$id = $this->_arg('person');
 		$user_id = $this->_arg('user');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if ($user_id) {
 			$id = $this->Person->field('id', compact('user_id'));
@@ -559,7 +583,7 @@ class PeopleController extends AppController {
 			$this->redirect('/');
 		}
 
-		$group = $this->UserCache->read('Group', $person['id']);
+		$groups = $this->UserCache->read('Groups', $person['id']);
 		$teams = $this->UserCache->read('Teams', $person['id']);
 		$photo = null;
 
@@ -697,7 +721,7 @@ class PeopleController extends AppController {
 			}
 		}
 
-		$this->set(compact('person', 'group', 'teams', 'relatives', 'related_to', 'divisions', 'waivers', 'registrations', 'preregistrations', 'credits', 'allstars', 'photo', 'documents', 'note', 'tasks', 'badges'));
+		$this->set(compact('person', 'groups', 'teams', 'relatives', 'related_to', 'divisions', 'waivers', 'registrations', 'preregistrations', 'credits', 'allstars', 'photo', 'documents', 'note', 'tasks', 'badges'));
 		$this->set('is_me', ($id === $my_id));
 		$this->set($this->_connections($id));
 	}
@@ -730,7 +754,7 @@ class PeopleController extends AppController {
 						'contain' => false,
 						'conditions' => array(
 							'person_id' => $person['id'],
-							'created_person_id' => $this->Auth->user('zuluru_person_id'),
+							'created_person_id' => $this->UserCache->currentId(),
 						),
 				));
 			}
@@ -752,7 +776,7 @@ class PeopleController extends AppController {
 		}
 
 		$this->set(compact('person', 'photo', 'note', 'badges'));
-		$this->set('is_me', ($id === $this->Auth->user('zuluru_person_id')));
+		$this->set('is_me', ($id === $this->UserCache->currentId()));
 		$this->set($this->_connections($id));
 
 		Configure::write ('debug', 0);
@@ -797,7 +821,7 @@ class PeopleController extends AppController {
 
 	function edit() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;
@@ -806,7 +830,7 @@ class PeopleController extends AppController {
 				$this->redirect('/');
 			}
 		}
-		$is_me = ($id === $this->Auth->user('zuluru_person_id'));
+		$is_me = ($id === $this->UserCache->currentId());
 		$this->set(compact('id', 'is_me'));
 
 		$this->_loadAddressOptions();
@@ -847,7 +871,29 @@ class PeopleController extends AppController {
 			}
 
 			$this->Person->set($this->data);
-			if ($this->Person->validates() && $this->Person->Affiliate->validates()) {
+
+			// Make sure someone isn't forging their way into an entirely unauthorized level.
+			if (!$this->is_admin && !empty($this->data['Group']['Group'])) {
+				$selected_groups = $this->Group->find('all', array(
+						'contain' => false,
+						'conditions' => array('id' => $this->data['Group']['Group']),
+				));
+				if ($this->is_manager) {
+					$level = 5;
+				} else if ($this->is_official) {
+					$level = 3;
+				} else {
+					$level = 1;
+				}
+				$invalid_groups = Set::extract("/Group[level>$level]", $selected_groups);
+				if (!empty($invalid_groups)) {
+					$this->Person->Group->validationErrors['Group'] = __('You have selected an invalid group.', true);
+				}
+			} else {
+				$selected_groups = array();
+			}
+
+			if ($this->Person->validates() && $this->Person->Group->validates() && $this->Person->Affiliate->validates()) {
 				if (!empty($this->data['Affiliate']['Affiliate'])) {
 					foreach ($this->data['Affiliate']['Affiliate'] as $key => $affiliate_id) {
 						if (in_array($affiliate_id, $this->UserCache->read('ManagedAffiliateIDs'))) {
@@ -875,7 +921,8 @@ class PeopleController extends AppController {
 
 					// Delete the cached data, so it's reloaded next time it's needed
 					$this->UserCache->clear('Person', $this->data['Person']['id']);
-					$this->UserCache->clear('Group', $this->data['Person']['id']);
+					$this->UserCache->clear('Groups', $this->data['Person']['id']);
+					$this->UserCache->clear('GroupIDs', $this->data['Person']['id']);
 					$this->UserCache->clear('Affiliates', $this->data['Person']['id']);
 					$this->UserCache->clear('AffiliateIDs', $this->data['Person']['id']);
 
@@ -888,7 +935,7 @@ class PeopleController extends AppController {
 			}
 		}
 		if (empty($this->data)) {
-			$this->Person->contain(array('Affiliate', $this->Auth->authenticate->name));
+			$this->Person->contain(array('Affiliate', 'Group', $this->Auth->authenticate->name));
 			$this->data = $this->Person->read(null, $id);
 			if (!$this->data) {
 				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -919,7 +966,7 @@ class PeopleController extends AppController {
 
 	function note() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -972,7 +1019,7 @@ class PeopleController extends AppController {
 
 	function delete_note() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -992,7 +1039,7 @@ class PeopleController extends AppController {
 
 	function preferences() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;
@@ -1112,7 +1159,7 @@ class PeopleController extends AppController {
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}
 		} else {
-			if (!$this->is_admin && $person_id != $this->Auth->user('zuluru_person_id')) {
+			if (!$this->is_admin && $person_id != $this->UserCache->currentId()) {
 				$this->Session->setFlash(__('You are not allowed to approve this relative request.', true), 'default', array('class' => 'warning'));
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}
@@ -1176,7 +1223,7 @@ class PeopleController extends AppController {
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}
 		} else {
-			if (!$this->is_admin && $person_id != $this->Auth->user('zuluru_person_id')) {
+			if (!$this->is_admin && $person_id != $this->UserCache->currentId()) {
 				$this->Session->setFlash(__('You are not allowed to remove this relation.', true), 'default', array('class' => 'warning'));
 				$this->redirect(array('action' => 'view', 'person' => $person_id));
 			}
@@ -1251,7 +1298,7 @@ class PeopleController extends AppController {
 
 			if ($code == 200) {
 				$oauth_creds = $tmhOAuth->extract_params($tmhOAuth->response['response']);
-				if ($this->Person->updateAll(array('twitter_token' => "'{$oauth_creds['oauth_token']}'", 'twitter_secret' => "'{$oauth_creds['oauth_token_secret']}'"), array('Person.id' => $this->Auth->user('zuluru_person_id')))) {
+				if ($this->Person->updateAll(array('twitter_token' => "'{$oauth_creds['oauth_token']}'", 'twitter_secret' => "'{$oauth_creds['oauth_token_secret']}'"), array('Person.id' => $this->UserCache->currentId()))) {
 					$this->Session->setFlash(sprintf(__('Your Twitter authorization has been completed. You can always revoke this at any time through the preferences page.', true), __('person', true)), 'default', array('class' => 'success'));
 				} else {
 					$this->Session->setFlash(sprintf(__('Twitter authorization was received, but the database failed to update.', true), __('person', true)), 'default', array('class' => 'warning'));
@@ -1290,7 +1337,7 @@ class PeopleController extends AppController {
 	}
 
 	function revoke_twitter() {
-		if ($this->Person->updateAll(array('twitter_token' => null, 'twitter_secret' => null), array('Person.id' => $this->Auth->user('zuluru_person_id')))) {
+		if ($this->Person->updateAll(array('twitter_token' => null, 'twitter_secret' => null), array('Person.id' => $this->UserCache->currentId()))) {
 			$this->Session->setFlash(sprintf(__('Your Twitter authorization has been revoked. You can always re-authorize at any time through the preferences page.', true), __('person', true)), 'default', array('class' => 'success'));
 		} else {
 			$this->Session->setFlash(sprintf(__('Failed to revoke your Twitter authorization.', true), __('person', true)), 'default', array('class' => 'warning'));
@@ -1544,7 +1591,7 @@ class PeopleController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('document', true)), 'default', array('class' => 'info'));
 			$this->redirect('/');
 		}
-		if (!$this->is_admin && $document['Upload']['person_id'] != $this->Auth->user('zuluru_person_id')) {
+		if (!$this->is_admin && $document['Upload']['person_id'] != $this->UserCache->currentId()) {
 			$this->Session->setFlash(__('You do not have permission to access this document.', true), 'default', array('class' => 'warning'));
 			$this->redirect('/');
 		}
@@ -1794,7 +1841,7 @@ class PeopleController extends AppController {
 		$document = $this->Person->Upload->read (null, $id);
 		if (!$document) {
 			$success = false;
-		} else if (!$this->is_admin && $document['Upload']['person_id'] != $this->Auth->user('zuluru_person_id')) {
+		} else if (!$this->is_admin && $document['Upload']['person_id'] != $this->UserCache->currentId()) {
 			$success = false;
 		} else {
 			if (!empty($this->data['Document']['comment'])) {
@@ -1809,7 +1856,7 @@ class PeopleController extends AppController {
 		}
 		$this->set(compact('success', 'document'));
 
-		if ($success && $document['Person']['id'] != $this->Auth->user('zuluru_person_id')) {
+		if ($success && $document['Person']['id'] != $this->UserCache->currentId()) {
 			if (!$this->_sendMail (array (
 					'to' => $document,
 					'subject' => Configure::read('organization.name') . ' Notification of Document Deletion',
@@ -1956,9 +2003,9 @@ class PeopleController extends AppController {
 			);
 			if ($badge['Badge']['category'] == 'assigned') {
 				$data['approved'] = true;
-				$data['approved_by'] = $this->Auth->user('zuluru_person_id');
+				$data['approved_by'] = $this->UserCache->currentId();
 			} else {
-				$data['nominated_by'] = $this->Auth->user('zuluru_person_id');
+				$data['nominated_by'] = $this->UserCache->currentId();
 			}
 			if ($this->Person->BadgesPerson->save($data)) {
 				if ($badge['Badge']['category'] == 'assigned') {
@@ -2054,7 +2101,7 @@ class PeopleController extends AppController {
 
 		$success = $this->Person->BadgesPerson->save (array(
 			'approved' => true,
-			'approved_by' => $this->Auth->user('zuluru_person_id'),
+			'approved_by' => $this->UserCache->currentId(),
 		));
 		$this->set(compact('success'));
 
@@ -2173,6 +2220,41 @@ class PeopleController extends AppController {
 		$this->redirect('/');
 	}
 
+	function act_as() {
+		$act_as = $this->_arg('person');
+		if ($act_as) {
+			// TODO: Eliminate hard-coded group_ids
+			if ($this->is_admin && in_array(7, $this->UserCache->read('GroupIDs', $act_as))) {
+				$this->Session->setFlash(__('Administrators cannot act as other administrators', true), 'default', array('class' => 'warning'));
+			} else if (!$this->is_admin && $this->is_manager && in_array(6, $this->UserCache->read('GroupIDs', $act_as))) {
+				$this->Session->setFlash(__('Managers cannot act as other managers', true), 'default', array('class' => 'warning'));
+			} else if ($act_as == $this->UserCache->realId()) {
+				$this->Session->delete('Zuluru.act_as_id');
+				$this->Session->delete('Zuluru.act_as_temporary');
+				$this->Session->setFlash(sprintf(__('You are now acting as %s', true), __('yourself', true)), 'default', array('class' => 'success'));
+			} else {
+				$this->Session->write('Zuluru.act_as_id', $act_as);
+				$this->Session->setFlash(sprintf(__('You are now acting as %s', true), $this->UserCache->read('Person.full_name', $act_as)), 'default', array('class' => 'success'));
+			}
+			$this->redirect('/');
+		}
+
+		// Relatives come first...
+		$relatives = $this->UserCache->read('Relatives');
+		foreach($relatives as $relative) {
+			$opts[$relative['Relative']['id']] = $relative['Relative']['full_name'];
+		}
+		// ...then the real user. No harm if they're already in the list; this really just adds admins at the end, if applicable.
+		if ($this->UserCache->realId() != $this->UserCache->currentId()) {
+			$opts[$this->UserCache->realId()] = $this->UserCache->read('Person.full_name', $this->UserCache->realId());
+		}
+		if (empty($opts)) {
+			$this->Session->setFlash(__('There is nobody else you can act as.', true), 'default', array('class' => 'warning'));
+			$this->redirect('/');
+		}
+		$this->set(compact('opts'));
+	}
+
 	function search() {
 		$params = $url = $this->_extractSearchParams();
 		$affiliates = $this->_applicableAffiliates();
@@ -2284,9 +2366,14 @@ class PeopleController extends AppController {
 			if (!empty($people)) {
 				$conditions = array('Person.id' => $people);
 				if (array_key_exists('affiliate_id', $params)) {
+					$admins = $this->Person->GroupsPerson->find('list', array(
+							// TODO: Eliminate hard-coded group_id
+							'conditions' => array('group_id' => 7),
+							'fields' => array('person_id', 'person_id'),
+					));
 					$conditions['OR'] = array(
 						"AffiliatePerson.affiliate_id" => $params['affiliate_id'],
-						'Person.group_id' => 3,
+						'Person.id' => $admins,
 					);
 				}
 
@@ -2314,7 +2401,7 @@ class PeopleController extends AppController {
 					$this->paginate = array('Person' => array(
 							'conditions' => $conditions,
 							'contain' => array(
-								'Note' => array('conditions' => array('created_person_id' => $this->Auth->user('zuluru_person_id'))),
+								'Note' => array('conditions' => array('created_person_id' => $this->UserCache->currentId())),
 								'Affiliate',
 							),
 							'limit' => Configure::read('feature.items_per_page'),
@@ -2399,7 +2486,7 @@ class PeopleController extends AppController {
 			$this->redirect(array('action' => 'list_new'));
 		}
 
-		$this->Person->contain('Affiliate', Configure::read('security.auth_model'));
+		$this->Person->contain('Affiliate', 'Group', Configure::read('security.auth_model'));
 		$person = $this->Person->read(null, $id);
 		if (!$person) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -2424,21 +2511,29 @@ class PeopleController extends AppController {
 			$dup_id = null;
 		}
 
-		$this->Person->contain($this->Auth->authenticate->name);
+		$this->Person->contain('Group', $this->Auth->authenticate->name);
 		$person_id = $this->data['Person']['id'];
 		$person = $this->Person->read(null, $person_id);
 		if (!empty ($dup_id)) {
-			$this->Person->contain($this->Auth->authenticate->name);
+			$this->Person->contain('Group', $this->Auth->authenticate->name);
 			$existing = $this->Person->read(null, $dup_id);
+		}
+
+		if (empty($person['Persion']['user_id'])) {
+			$this->Person->beforeValidateChild();
+		}
+
+		// TODO: Eliminate this hard-coded group_id
+		$this_is_player = Set::extract('/Group[id=2]', $person);
+		if (empty($this_is_player)) {
+			$this->Person->beforeValidateNonPlayer();
 		}
 
 		// TODO: Some of these require updates/deletions in the settings table
 		switch($disposition) {
-			case 'approved_player':
+			case 'approved':
 				$data = array(
 					'id' => $person_id,
-					// TODO: 'Player' is hard-coded here, but also in the database
-					'group_id' => $this->Person->Group->field('id', array('name' => 'Player')),
 					'status' => 'active',
 				);
 				$saved = $this->Person->save ($data, false, array_keys ($data));
@@ -2461,38 +2556,13 @@ class PeopleController extends AppController {
 				}
 				break;
 
-			case 'approved_visitor':
-				$data = array(
-					'id' => $person_id,
-					// TODO: 'Non-player account' is hard-coded here, but also in the database
-					'group_id' => $this->Person->Group->field('id', array('name' => 'Non-player account')),
-					'status' => 'inactive',
-				);
-				$saved = $this->Person->save ($data, false, array_keys ($data));
-				if (!$saved) {
-					$this->Session->setFlash(__('Couldn\'t save new member activation', true), 'default', array('class' => 'warning'));
-					$this->redirect(array('action' => 'approve', 'person' => $person_id));
-				}
-				$this->UserCache->clear('Person', $person_id);
-
-				$this->set('person', $saved);
-
-				if (!$this->_sendMail (array (
-						'to' => $person,
-						'subject' => Configure::read('organization.name') . ' Account Activation for ' . $saved['Person']['user_name'],
-						'template' => 'account_approved',
-						'sendAs' => 'both',
-				)))
-				{
-					$this->Session->setFlash(sprintf (__('Error sending email to %s', true), $person['Person']['email']), 'default', array('class' => 'error'), 'email');
-				}
-				break;
-
 			case 'delete':
-				if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-					$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
-				} else {
-					$this->Auth->authenticate->delete($person['Person']['user_id']);
+				if (!empty($person['Person']['user_id'])) {
+					if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
+						$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
+					} else {
+						$this->Auth->authenticate->delete($person['Person']['user_id']);
+					}
 				}
 				if (! $this->Person->delete($person_id) ) {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
@@ -2501,10 +2571,12 @@ class PeopleController extends AppController {
 				break;
 
 			case 'delete_duplicate':
-				if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-					$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
-				} else {
-					$this->Auth->authenticate->delete($person['Person']['user_id']);
+				if (!empty($person['Person']['user_id'])) {
+					if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
+						$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
+					} else {
+						$this->Auth->authenticate->delete($person['Person']['user_id']);
+					}
 				}
 
 				if (! $this->Person->delete($person_id) ) {
@@ -2530,11 +2602,12 @@ class PeopleController extends AppController {
 			// that some old information (e.g. user ID) is preserved
 			case 'merge_duplicate':
 				$transaction = new DatabaseTransaction($this->Person);
-				if (method_exists ($this->Auth->authenticate, 'merge_duplicate_user')) {
+				if (method_exists ($this->Auth->authenticate, 'merge_duplicate_user') && !empty($person['Person']['user_id']) && !empty($existing['Person']['user_id'])) {
 					$this->Auth->authenticate->merge_duplicate_user($person['Person']['user_id'], $existing['Person']['user_id']);
 				}
 
 				$this->Person->AffiliatesPerson->deleteAll(array('AffiliatesPerson.person_id' => $dup_id));
+				$person['Group'] = array('Group' => array_unique(array_merge(Set::extract('/Group/id', $person), Set::extract('/Group/id', $existing))));
 
 				// Update all related records
 				foreach ($this->Person->hasMany as $class => $details) {
@@ -2559,12 +2632,14 @@ class PeopleController extends AppController {
 				}
 
 				// Unset a few fields that we want to retain from the old record
-				foreach (array('group_id', 'status', 'user_id', 'year_started') as $field) {
-					unset ($person['Person'][$field]);
+				foreach (array('status', 'user_id', 'year_started') as $field) {
+					if (!empty($existing['Person'][$field])) {
+						unset ($person['Person'][$field]);
+					}
 				}
 				$person['Person']['id'] = $dup_id;
 
-				$saved = $this->Person->save ($person);
+				$saved = $this->Person->saveAll($person);
 				if (!$saved) {
 					$this->Session->setFlash(__('Couldn\'t save new member information', true), 'default', array('class' => 'warning'));
 					break;
@@ -2669,7 +2744,7 @@ class PeopleController extends AppController {
 
 	function registrations() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;
@@ -2694,7 +2769,7 @@ class PeopleController extends AppController {
 
 	function credits() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;
@@ -2718,7 +2793,7 @@ class PeopleController extends AppController {
 
 	function teams() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;
@@ -2735,7 +2810,7 @@ class PeopleController extends AppController {
 
 	function waivers() {
 		$id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$id) {
 			$id = $my_id;

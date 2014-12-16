@@ -403,7 +403,7 @@ class GameSlotsController extends AppController {
 							'status' => $this->data['Game']['status'],
 							'home_score' => $score,
 							'rating_points' => $rating,
-							'approved_by' => $this->Auth->user('zuluru_person_id'),
+							'approved_by' => $this->UserCache->currentId(),
 					);
 					if ($details['incident']) {
 						$incidents[$game['home_team']] = array(
@@ -465,7 +465,7 @@ class GameSlotsController extends AppController {
 							));
 							if ($this->_sendMail (array (
 									'to' => "Incident Manager <$addr>",
-									'from' => $this->UserCache->read('Person.email_formatted'),
+									'replyTo' => $this->UserCache->read('Person.email_formatted'),
 									'subject' => "Incident report: {$incident['type']}",
 									'template' => 'incident_report',
 									'sendAs' => 'html',

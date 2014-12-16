@@ -489,13 +489,15 @@ div.related
 }
 
 /* Attendance and roster change styling. */
-#attendance_options, #roster_role_options, #roster_position_options
+#attendance_options, #roster_role_options, #roster_position_options,
+#affiliate_options, #sport_options, #season_options, #profile_options
 {
 	cursor: pointer;
 	position: absolute;
 	background: white;
 	padding: 0 1px;
 	border: 1px solid black;
+	z-index: 99;
 }
 #attendance_options div:hover, #roster_role_options div:hover, #roster_position_options div:hover
 {

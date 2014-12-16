@@ -57,7 +57,7 @@ class GamesController extends AppController {
 		)))
 		{
 			$person = $this->_arg('person');
-			if (!$person || $person == $this->Auth->user('zuluru_person_id') || in_array ($person, $this->UserCache->read('RelativeIDs'))) {
+			if (!$person || $person == $this->UserCache->currentId() || in_array ($person, $this->UserCache->read('RelativeIDs'))) {
 				return true;
 			}
 		}
@@ -188,7 +188,7 @@ class GamesController extends AppController {
 						)),
 						array('AND' => array(
 							'Note.visibility' => VISIBILITY_PRIVATE,
-							'Note.created_person_id' => $this->Auth->user('zuluru_person_id'),
+							'Note.created_person_id' => $this->UserCache->currentId(),
 						)),
 					),
 				),
@@ -380,7 +380,7 @@ class GamesController extends AppController {
 			// the correct data gets into the correct form.
 			// PLAYOFF TODO: Method of handling the various dependencies
 			$this->data['Game']['id'] = $id;
-			$this->data['Game']['approved_by'] = $this->Auth->user('zuluru_person_id');
+			$this->data['Game']['approved_by'] = $this->UserCache->currentId();
 			$this->data['SpiritEntry'][$game['Game']['home_team']]['team_id'] = $game['Game']['home_team'];
 			$this->data['SpiritEntry'][$game['Game']['home_team']]['created_team_id'] = $game['Game']['away_team'];
 			if (array_key_exists($game['Game']['home_team'], $game['SpiritEntry'])) {
@@ -596,7 +596,7 @@ class GamesController extends AppController {
 	function note() {
 		$game_id = $this->_arg('game');
 		$note_id = $this->_arg('note');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$game_id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('game', true)), 'default', array('class' => 'info'));
@@ -716,7 +716,7 @@ class GamesController extends AppController {
 
 	function delete_note() {
 		$note_id = $this->_arg('note');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 
 		if (!$note_id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('note', true)), 'default', array('class' => 'info'));
@@ -899,7 +899,7 @@ class GamesController extends AppController {
 		}
 
 		$person_id = $this->_arg('person');
-		$my_id = $this->Auth->user('zuluru_person_id');
+		$my_id = $this->UserCache->currentId();
 		if (!$person_id) {
 			$person_id = $my_id;
 			if (!$person_id) {
@@ -1007,7 +1007,7 @@ class GamesController extends AppController {
 			$this->redirect('/');
 		}
 
-		$is_me = ($person_id == $this->Auth->user('zuluru_person_id'));
+		$is_me = ($person_id == $this->UserCache->currentId());
 		$is_captain = in_array ($team_id, $this->UserCache->read('OwnedTeamIDs'));
 		$is_coordinator = in_array ($team['division_id'], $this->UserCache->read('DivisionIDs'));
 
@@ -1283,7 +1283,7 @@ class GamesController extends AppController {
 		}
 
 		$team_id = $this->_arg('team');
-		if (!$this->is_volunteer && !$team_id) {
+		if (!$this->is_volunteer && !$this->is_official && !$team_id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('team', true)), 'default', array('class' => 'info'));
 			$this->redirect('/');
 		}
@@ -1375,7 +1375,7 @@ class GamesController extends AppController {
 		}
 
 		$submitter = $this->_arg('team');
-		if (!$this->is_volunteer && !$submitter) {
+		if (!$this->is_volunteer && !$this->is_official && !$submitter) {
 			$this->set('error', sprintf(__('Invalid %s', true), __('submitter', true)));
 			return;
 		}
@@ -1566,7 +1566,7 @@ class GamesController extends AppController {
 		}
 
 		$submitter = $this->_arg('team');
-		if (!$this->is_volunteer && !$submitter) {
+		if (!$this->is_volunteer && !$this->is_official && !$submitter) {
 			$this->set('error', sprintf(__('Invalid %s', true), __('submitter', true)));
 			return;
 		}
@@ -1702,7 +1702,7 @@ class GamesController extends AppController {
 		}
 
 		$submitter = $this->_arg('team');
-		if (!$this->is_volunteer && !$submitter) {
+		if (!$this->is_volunteer && !$this->is_official && !$submitter) {
 			$this->set('error', sprintf(__('Invalid %s', true), __('submitter', true)));
 			return;
 		}
@@ -1824,7 +1824,7 @@ class GamesController extends AppController {
 		}
 
 		$submitter = $this->_arg('team');
-		if (!$this->is_volunteer && !$submitter) {
+		if (!$this->is_volunteer && !$this->is_official && !$submitter) {
 			$this->set('message', sprintf(__('Invalid %s', true), __('submitter', true)));
 			return;
 		}
@@ -1955,7 +1955,7 @@ class GamesController extends AppController {
 			return;
 		}
 		$this->Game->HomeTeam->Person->contain();
-		$person = $this->Game->HomeTeam->Person->read(array('twitter_token', 'twitter_secret'), $this->Auth->user('zuluru_person_id'));
+		$person = $this->Game->HomeTeam->Person->read(array('twitter_token', 'twitter_secret'), $this->UserCache->currentId());
 		if (empty($person['Person']['twitter_token']) || empty($person['Person']['twitter_secret'])) {
 			$this->set('message', __('You have not authorized this site to tweet on your behalf. Configure this in the Profile Preferences page.', true));
 			return;
@@ -2305,7 +2305,7 @@ class GamesController extends AppController {
 						$this->set(compact ('division', 'game', 'status', 'opponent_status', 'score_for', 'score_against', 'team', 'opponent', 'captains'));
 						$this->_sendMail (array (
 								'to' => $captains,
-								'from' => $this->UserCache->read('Person.email_formatted'),
+								'replyTo' => $this->UserCache->read('Person.email_formatted'),
 								'subject' => 'Opponent score submission',
 								'template' => 'score_submission',
 								'sendAs' => 'both',
@@ -2341,7 +2341,7 @@ class GamesController extends AppController {
 					));
 					if ($this->_sendMail (array (
 							'to' => "Incident Manager <$addr>",
-							'from' => $this->UserCache->read('Person.email_formatted'),
+							'replyTo' => $this->UserCache->read('Person.email_formatted'),
 							'subject' => "Incident report: {$incident['type']}",
 							'template' => 'incident_report',
 							'sendAs' => 'html',
@@ -2409,7 +2409,7 @@ class GamesController extends AppController {
 
 		$team_id = $this->_arg('team');
 		// Allow specified individuals (referees, umpires, volunteers) to submit stats without a team id
-		if (!$this->is_volunteer && !$team_id && !in_array($game['Division']['id'], $this->UserCache->read('DivisionIDs'))) {
+		if (!$this->is_volunteer && !$this->is_official && !$team_id && !in_array($game['Division']['id'], $this->UserCache->read('DivisionIDs'))) {
 			$this->Session->setFlash(__('You must provide a team ID.', true), 'default', array('class' => 'info'));
 			$this->redirect('/');
 		}
@@ -3076,7 +3076,7 @@ class GamesController extends AppController {
 	function past() {
 		$person = $this->_arg('person');
 		if (!$person) {
-			$person = $this->Auth->user('zuluru_person_id');
+			$person = $this->UserCache->currentId();
 		}
 		$team_ids = $this->UserCache->read('TeamIDs', $person);
 		if (empty ($team_ids)) {
@@ -3119,7 +3119,7 @@ class GamesController extends AppController {
 	function future($recursive = false, $limit = null) {
 		$person = $this->_arg('person');
 		if (!$person) {
-			$person = $this->Auth->user('zuluru_person_id');
+			$person = $this->UserCache->currentId();
 		}
 		$team_ids = $this->UserCache->read('TeamIDs', $person);
 		if (empty ($team_ids)) {

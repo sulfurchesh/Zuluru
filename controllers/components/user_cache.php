@@ -25,17 +25,62 @@ class UserCacheComponent extends Object
 		$self =& UserCacheComponent::getInstance();
 		$self->_controller =& $controller;
 		$self->initializeData();
-		$self->initializeId();
 	}
 
 	function initializeId() {
 		if ($this->my_id) {
 			return;
 		}
-		$this->my_id = $this->_controller->Auth->user('zuluru_person_id');
+
+		// If this is the home page, and "act as" is temporary, we reset it.
+		if ($this->_controller->here == '/' && $this->_controller->Session->check('Zuluru.act_as_temporary')) {
+			$this->_controller->Session->delete('Zuluru.act_as_id');
+			$this->_controller->Session->delete('Zuluru.act_as_temporary');
+		}
+
+		// Check for a temporary "act as" request.
+		$act_as = $this->_controller->_arg('act_as');
+		if ($act_as) {
+			// We must have the my_id variable set, or else the read call goes recursive
+			$this->my_id = $this->_controller->Auth->user('zuluru_person_id');
+			if ($this->my_id) {
+				$this->data[$this->my_id] = array();
+				$relatives = $this->read('RelativeIDs');
+				$groups = $this->read('GroupIDs');
+				// TODO: Eliminate hard-coded group_id
+				if (in_array($act_as, $relatives) || in_array(7, $groups)) {
+					$this->_controller->Session->write('Zuluru.act_as_id', $act_as);
+					$this->_controller->Session->write('Zuluru.act_as_temporary', true);
+				} else {
+					$this->_controller->Session->setFlash(__('You do not have permission to act as that person.', true), 'default', array('class' => 'warning'));
+					$this->_controller->redirect('/');
+				}
+				// Clear the temporary data
+				unset($this->data[$this->my_id]);
+				$this->my_id = null;
+			}
+		}
+
+		$act_as = $this->_controller->Session->read('Zuluru.act_as_id');
+		if ($act_as) {
+			$this->my_id = $act_as;
+		} else {
+			$this->my_id = $this->_controller->Auth->user('zuluru_person_id');
+		}
 		if ($this->my_id) {
 			$this->data[$this->my_id] = array();
 		}
+	}
+
+	function currentId() {
+		$self =& UserCacheComponent::getInstance();
+		$self->initializeId();
+		return $self->my_id;
+	}
+
+	function realId() {
+		$self =& UserCacheComponent::getInstance();
+		return $self->_controller->Auth->user('zuluru_person_id');
 	}
 
 	function read($key, $id = null, $internal = false) {
@@ -191,12 +236,22 @@ class UserCacheComponent extends Object
 					}
 					break;
 
-				case 'Group':
+				case 'Groups':
 					if (!isset($self->_controller->Person)) {
 						$self->_controller->Person = ClassRegistry::init('Person');
 					}
 					if ($self->read('Person', $id, true)) {
-						$self->data[$id][$key] = $self->_findData($self->_controller->Person->Group, $self->data[$id]['Person']['group_id']);
+						if (!empty($self->data[$id]['Person']['Group'])) {
+							$self->data[$id][$key] = $self->data[$id]['Person']['Group'];
+						} else {
+							$self->data[$id][$key] = array();
+						}
+					}
+					break;
+
+				case 'GroupIDs':
+					if ($self->read('Groups', $id, true)) {
+						$self->data[$id][$key] = Set::extract('/id', $self->data[$id]['Groups']);
 					}
 					break;
 
@@ -236,7 +291,7 @@ class UserCacheComponent extends Object
 					if (!isset($self->_controller->Person)) {
 						$self->_controller->Person = ClassRegistry::init('Person');
 					}
-					$self->data[$id][$key] = $self->_findData($self->_controller->Person, $id, array($self->_controller->Auth->authenticate->name));
+					$self->data[$id][$key] = $self->_findData($self->_controller->Person, $id, array($self->_controller->Auth->authenticate->name, 'Group'));
 					break;
 
 				case 'Preregistrations':
@@ -289,9 +344,18 @@ class UserCacheComponent extends Object
 					if (!isset($self->_controller->Person)) {
 						$self->_controller->Person = ClassRegistry::init('Person');
 					}
+
+					$config = new DATABASE_CONFIG;
+					$prefix = $self->_controller->Auth->authenticate->tablePrefix;
+					if ($self->_controller->Auth->authenticate->useDbConfig != 'default') {
+						$config_name = $self->_controller->Auth->authenticate->useDbConfig;
+						$config = $config->$config_name;
+						$prefix = "{$config['database']}.$prefix";
+					}
+
 					$self->data[$id][$key] = $self->_findData($self->_controller->Person->Relative, array(
 							'contain' => false,
-							'fields' => array('Relative.*', 'PeoplePerson.*'),
+							'fields' => array('Relative.*', 'PeoplePerson.*', "{$self->_controller->Auth->authenticate->name}.*"),
 							'joins' => array(
 								array(
 									'table' => "{$self->_controller->Person->tablePrefix}people_people",
@@ -299,6 +363,13 @@ class UserCacheComponent extends Object
 									'type' => 'LEFT',
 									'foreignKey' => false,
 									'conditions' => 'Relative.id = PeoplePerson.person_id',
+								),
+								array(
+									'table' => "$prefix{$self->_controller->Auth->authenticate->useTable}",
+									'alias' => $self->_controller->Auth->authenticate->name,
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => "{$self->_controller->Auth->authenticate->name}.{$self->_controller->Auth->authenticate->primaryKey} = Relative.user_id",
 								),
 							),
 							'conditions' => array(
@@ -317,9 +388,18 @@ class UserCacheComponent extends Object
 					if (!isset($self->_controller->Person)) {
 						$self->_controller->Person = ClassRegistry::init('Person');
 					}
+
+					$config = new DATABASE_CONFIG;
+					$prefix = $self->_controller->Auth->authenticate->tablePrefix;
+					if ($self->_controller->Auth->authenticate->useDbConfig != 'default') {
+						$config_name = $self->_controller->Auth->authenticate->useDbConfig;
+						$config = $config->$config_name;
+						$prefix = "{$config['database']}.$prefix";
+					}
+
 					$self->data[$id][$key] = $self->_findData($self->_controller->Person->Relative, array(
 							'contain' => false,
-							'fields' => array('Relative.*', 'PeoplePerson.*'),
+							'fields' => array('Relative.*', 'PeoplePerson.*', "{$self->_controller->Auth->authenticate->name}.*"),
 							'joins' => array(
 								array(
 									'table' => "{$self->_controller->Person->tablePrefix}people_people",
@@ -327,6 +407,13 @@ class UserCacheComponent extends Object
 									'type' => 'LEFT',
 									'foreignKey' => false,
 									'conditions' => 'Relative.id = PeoplePerson.relative_id',
+								),
+								array(
+									'table' => "$prefix{$self->_controller->Auth->authenticate->useTable}",
+									'alias' => $self->_controller->Auth->authenticate->name,
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => "{$self->_controller->Auth->authenticate->name}.{$self->_controller->Auth->authenticate->primaryKey} = Relative.user_id",
 								),
 							),
 							'conditions' => array(

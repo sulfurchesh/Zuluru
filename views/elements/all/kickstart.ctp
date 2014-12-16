@@ -1,3 +1,10 @@
+<?php
+// There may be nothing to output, in which case we don't even want the wrapper div
+if (!$is_admin && !$is_manager && !($empty && $is_player)) {
+	return;
+}
+$act_as = ($id == $my_id ? null : $id);
+?>
 <div id="kick_start">
 <?php
 if ($is_admin) {
@@ -148,7 +155,7 @@ if ($is_manager) {
 				$this->Html->link(__('Create one now!', true), array('controller' => 'events', 'action' => 'add', 'return' => true)));
 		}
 	}
-} else if ($empty) {
+} else if ($empty && $is_player) {
 	// If the user has nothing going on, pull some more details to allow us to help them get started
 	$membership_events = $this->requestAction(array('controller' => 'events', 'action' => 'count'), array('pass' => array(true)));
 	$non_membership_events = $this->requestAction(array('controller' => 'events', 'action' => 'count'));
@@ -160,19 +167,19 @@ if ($is_manager) {
 <?php
 	$options = array();
 	if ($membership_events) {
-		$options[] = 'membership';
+		$options[] = __('membership', true);
 	}
 	if ($non_membership_events) {
-		$options[] = 'an event';
+		$options[] = __('an event', true);
 	}
 
 	$actions = array();
 	if (!empty($options)) {
-		$actions[] = $this->Html->link ('Register for ' . implode(' or ', $options), array('controller' => 'events', 'action' => 'wizard'));
+		$actions[] = $this->Html->link (__('Register for', true) . ' ' . implode(' ' . __('or', true) . ' ', $options), array('controller' => 'events', 'action' => 'wizard', 'act_as' => $act_as));
 	}
 
 	if ($open_teams) {
-		$actions[] = $this->Html->link ('Join an existing team', array('controller' => 'teams', 'action' => 'join'));
+		$actions[] = $this->Html->link ('Join an existing team', array('controller' => 'teams', 'action' => 'join', 'act_as' => $act_as));
 	}
 
 	if (!empty($leagues)) {

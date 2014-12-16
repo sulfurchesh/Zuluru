@@ -9,32 +9,64 @@ $this->Html->addCrumb (__('View', true));
 echo $this->element('people/player_photo', array('person' => $person, 'photo' => $photo));
 echo $person['full_name'];
 $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_captain || $is_my_captain || $is_my_coordinator || $is_division_captain;
+$has_visible_contact = false;
+
+$this_is_parent = Set::extract('/GroupsPerson[group_id=1]', $groups);
+$this_is_parent = (!empty($this_is_parent));
+$this_is_player = Set::extract('/GroupsPerson[group_id=2]', $groups);
+$this_is_player = (!empty($this_is_player));
 ?></h2>
 	<dl><?php $i = 0; $class = ' class="altrow"';?>
 		<?php if ($is_me || $is_admin || $is_manager):?>
+			<?php if ($person['user_id']):?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('User Name'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php echo $person['user_name']; ?>
 			</dd>
-			<?php if (!Configure::read('feature.manage_accounts')): ?>
+				<?php if (!Configure::read('feature.manage_accounts')): ?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php printf(__('%s User Id', true), Configure::read('feature.manage_name')); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php echo $person['user_id']; ?>
 			</dd>
+				<?php endif; ?>
 			<?php endif; ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Zuluru User Id'); ?></dt>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Zuluru Id'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php echo $person['id']; ?>
 			</dd>
 		<?php endif; ?>
-		<?php if ($view_contact || ($is_logged_in && $person['publish_email'])):?>
+		<?php if ($is_admin || $is_manager):?>
+			<?php if (!empty($person['last_login'])):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Last Login'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php echo $this->ZuluruTime->datetime($person['last_login']); ?>
+			</dd>
+			<?php endif; ?>
+			<?php if (!empty($person['client_ip'])):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('IP Address'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php echo $person['client_ip']; ?>
+			</dd>
+			<?php endif; ?>
+		<?php endif; ?>
+		<?php if (($view_contact || ($is_logged_in && $person['publish_email'])) && !empty($person['email'])):?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Email Address'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
+				$has_visible_contact = true;
 				echo $this->Html->link($person['email'], "mailto:{$person['email']}");
 				echo ' (' . ($person['publish_email'] ? __('published', true) : __('private', true)) . ')';
 				?>
-
+			</dd>
+		<?php endif; ?>
+		<?php if (($view_contact || ($is_logged_in && $person['publish_alternate_email'])) && !empty($person['alternate_email'])):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Alternate Email Address'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php
+				$has_visible_contact = true;
+				echo $this->Html->link($person['alternate_email'], "mailto:{$person['alternate_email']}");
+				echo ' (' . ($person['publish_alternate_email'] ? __('published', true) : __('private', true)) . ')';
+				?>
 			</dd>
 		<?php endif; ?>
 		<?php if (Configure::read('profile.home_phone') && !empty($person['home_phone']) &&
@@ -42,10 +74,10 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (home)'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
+				$has_visible_contact = true;
 				echo $person['home_phone'];
 				echo ' (' . ($person['publish_home_phone'] ? __('published', true) : __('private', true)) . ')';
 				?>
-
 			</dd>
 		<?php endif; ?>
 		<?php if (Configure::read('profile.work_phone') && !empty($person['work_phone']) &&
@@ -53,6 +85,7 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (work)'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
+				$has_visible_contact = true;
 				echo $person['work_phone'];
 				if (!empty($person['work_ext'])) {
 					echo ' x' . $person['work_ext'];
@@ -67,102 +100,167 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (mobile)'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
+				$has_visible_contact = true;
 				echo $person['mobile_phone'];
 				echo ' (' . ($person['publish_mobile_phone'] ? __('published', true) : __('private', true)) . ')';
 				?>
 
 			</dd>
 		<?php endif; ?>
-		<?php if ($is_me || $is_admin || $is_manager):?>
-			<?php if (Configure::read('profile.addr_street')): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Address'); ?></dt>
-			<dd<?php if ($i % 2 == 0) echo $class;?>>
-				<?php echo $person['addr_street']; ?>
-
+		<?php if ($this_is_parent): ?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Alternate Contact'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php echo $person['alternate_full_name']; ?>
+				&nbsp;
 			</dd>
-			<?php endif; ?>
-			<?php if (Configure::read('profile.addr_city') || Configure::read('profile.addr_prov') || Configure::read('profile.addr_country')): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>>&nbsp;</dt>
-			<dd<?php if ($i % 2 == 0) echo $class;?>>
+			<?php if (Configure::read('profile.work_phone') && !empty($person['alternate_work_phone']) &&
+					($view_contact || ($is_logged_in && $person['publish_alternate_work_phone']))):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (work)'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
-				$addr = array();
-				if (Configure::read('profile.addr_city')) {
-					$addr[] = $person['addr_city'];
+				$has_visible_contact = true;
+				echo $person['alternate_work_phone'];
+				if (!empty($person['alternate_work_ext'])) {
+					echo ' x' . $person['alternate_work_ext'];
 				}
-				if (Configure::read('profile.addr_city')) {
-					$addr[] = __($person['addr_prov'], true);
-				}
-				if (Configure::read('profile.addr_city')) {
-					$addr[] = __($person['addr_country'], true);
-				}
-				echo implode(', ', $addr);
+				echo ' (' . ($person['publish_alternate_work_phone'] ? __('published', true) : __('private', true)) . ')';
 				?>
 
 			</dd>
 			<?php endif; ?>
-			<?php if (Configure::read('profile.addr_postalcode')): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>>&nbsp;</dt>
+			<?php if (Configure::read('profile.mobile_phone') && !empty($person['alternate_mobile_phone']) &&
+					($view_contact || ($is_logged_in && $person['publish_alternate_mobile_phone']))):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (mobile)'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php
+				$has_visible_contact = true;
+				echo $person['alternate_mobile_phone'];
+				echo ' (' . ($person['publish_alternate_mobile_phone'] ? __('published', true) : __('private', true)) . ')';
+				?>
+
+			</dd>
+			<?php endif; ?>
+		<?php endif; ?>
+		<?php if ($is_me || $is_admin || $is_manager):?>
+			<?php
+			$has_address = false;
+			$label = __('Address', true);
+			if (Configure::read('profile.addr_street') && !empty($person['addr_street'])):
+			?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php echo $label; ?></dt>
+			<dd<?php if ($i % 2 == 0) echo $class;?>>
+				<?php
+				echo $person['addr_street'];
+				$has_address = true;
+				$label = '&nbsp;';
+				?>
+			</dd>
+			<?php endif; ?>
+			<?php
+			$addr = array();
+			if (Configure::read('profile.addr_city') && !empty($person['addr_city'])) {
+				$addr[] = $person['addr_city'];
+			}
+			if (Configure::read('profile.addr_prov') && !empty($person['addr_prov'])) {
+				$addr[] = __($person['addr_prov'], true);
+			}
+			if (Configure::read('profile.addr_country') && !empty($person['addr_country'])) {
+				$addr[] = __($person['addr_country'], true);
+			}
+			if (!empty($addr)):
+			?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php echo $label; ?></dt>
+			<dd<?php if ($i % 2 == 0) echo $class;?>><?php echo implode(', ', $addr); ?></dd>
+			<?php
+				$has_address = true;
+				$label = '&nbsp;';
+			endif;
+			?>
+			<?php if (Configure::read('profile.addr_postalcode') && !empty($person['addr_postalcode'])): ?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php echo $label; ?></dt>
+			<dd<?php if ($i % 2 == 0) echo $class;?>>
 				<?php echo $person['addr_postalcode']; ?>
-
 			</dd>
-			<?php endif; ?>
-			<?php if (Configure::read('profile.birthdate')): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Birthdate'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php
-				if (Configure::read('feature.birth_year_only')) {
-					if (empty($person['birthdate']) || substr($person['birthdate'], 0, 4) == '0000') {
-						__('unknown');
+			<?php
+				$has_address = true;
+			endif;
+			?>
+			<?php
+			if ($has_address) {
+				++ $i;
+			}
+			?>
+		<?php endif; ?>
+		<?php if ($this_is_player): ?>
+			<?php if ($is_me || $is_admin || $is_manager):?>
+				<?php if (Configure::read('profile.birthdate')): ?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Birthdate'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					if (Configure::read('feature.birth_year_only')) {
+						$birth_year = substr($person['birthdate'], 0, 4);
+						if (empty($person['birthdate']) || $birth_year == '0000') {
+							__('unknown');
+						} else {
+							echo $birth_year;
+						}
 					} else {
-						echo substr($person['birthdate'], 0, 4);
+						echo $this->ZuluruTime->date($person['birthdate']);
 					}
-				} else {
-					echo $this->ZuluruTime->date($person['birthdate']);
-				}
-				?>
+					?>
+				</dd>
+				<?php endif; ?>
+			<?php endif; ?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Gender'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php __($person['gender']); ?>&nbsp;
+
+			</dd>
+			<?php if ($is_me || $is_admin || $is_manager || $is_coordinator || $is_captain):?>
+				<?php if (Configure::read('profile.height') && !empty($person['height'])): ?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Height'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php echo $person['height'] . ' ' . (Configure::read('feature.units') == 'Metric' ? __('cm', true) : __('inches', true)); ?>
+
+				</dd>
+				<?php endif; ?>
+				<?php if (Configure::read('profile.shirt_size') && !empty($person['shirt_size'])): ?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Shirt Size'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php __($person['shirt_size']); ?>
+
+				</dd>
+				<?php endif; ?>
+			<?php endif; ?>
+			<?php if (Configure::read('profile.skill_level') && !empty ($person['skill_level'])):?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Skill Level'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php __(Configure::read("options.skill.{$person['skill_level']}")) ; ?>
+
 			</dd>
 			<?php endif; ?>
-		<?php endif; ?>
-		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Gender'); ?></dt>
-		<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-			<?php __($person['gender']); ?>&nbsp;
+			<?php if ($is_logged_in && !empty ($person['year_started'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Year Started'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php echo $person['year_started']; ?>
 
-		</dd>
-		<?php if ($is_me || $is_admin || $is_manager || $is_coordinator || $is_captain):?>
-			<?php if (Configure::read('profile.height') && !empty($person['height'])): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Height'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php echo $person['height'] . ' ' . (Configure::read('feature.units') == 'Metric' ? __('cm', true) : __('inches', true)); ?>
-
-			</dd>
+				</dd>
 			<?php endif; ?>
-			<?php if (Configure::read('profile.shirt_size') && !empty($person['shirt_size'])): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Shirt Size'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php __($person['shirt_size']); ?>
-
-			</dd>
-			<?php endif; ?>
-		<?php endif; ?>
-		<?php if (Configure::read('profile.skill_level') && !empty ($person['skill_level'])):?>
-		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Skill Level'); ?></dt>
-		<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-			<?php __(Configure::read("options.skill.{$person['skill_level']}")) ; ?>
-
-		</dd>
-		<?php endif; ?>
-		<?php if ($is_logged_in && !empty ($person['skill_level'])):?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Year Started'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php echo $person['year_started']; ?>
-
-			</dd>
 		<?php endif; ?>
 		<?php if ($is_me || $is_admin || $is_manager):?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Account Class'); ?></dt>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __n('Account Class', 'Account Classes', count($groups)); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php __($group['name']); ?>
+				<?php
+				$names = array();
+				foreach ($groups as $group) {
+					$names[] = __($group['name'], true);
+				}
+				if (empty($names)) {
+					__('None');
+				} else {
+					echo implode(', ', $names);
+				}
+				?>
 
 			</dd>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Account Status'); ?></dt>
@@ -204,7 +302,7 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 <div class="actions">
 	<ul>
 		<?php
-		if ($is_logged_in) {
+		if ($is_logged_in && $has_visible_contact) {
 			echo $this->Html->tag ('li', $this->Html->link(__('VCF', true), array('action' => 'vcf', 'person' => $person['id'])));
 		}
 		if ($is_logged_in && Configure::read('feature.annotations')) {
@@ -224,12 +322,86 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			}
 		}
 		if ($is_admin || $is_manager) {
+			echo $this->Html->tag ('li', $this->Html->link(__('Act As', true), array('controller' => 'people', 'action' => 'act_as', 'person' => $person['id'])));
 			echo $this->Html->tag ('li', $this->ZuluruHtml->iconLink('delete_24.png', array('action' => 'delete', 'person' => $person['id']), array('alt' => __('Delete Player', true), 'title' => __('Delete Player', true)), array('confirm' => sprintf(__('Are you sure you want to delete # %s?', true), $person['id']))));
 		}
 		?>
 	</ul>
 </div>
 
+<?php if ($view_contact && AppController::_isChild($person['birthdate']) && !empty($related_to)): ?>
+<div class="related">
+	<h3><?php __('Contacts');?></h3>
+	<dl><?php $i = 0; $class = ' class="altrow"';?>
+	<?php
+	foreach ($related_to as $relative):
+		if ($relative['PeoplePerson']['approved']):
+	?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Name'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php echo $relative['Relative']['full_name']; ?>
+			</dd>
+			<?php if (!empty($relative['Relative']['email'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Email Address'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					echo $this->Html->link($relative['Relative']['email'], "mailto:{$relative['Relative']['email']}");
+					echo ' (' . ($relative['Relative']['publish_email'] ? __('published', true) : __('private', true)) . ')';
+					?>
+				</dd>
+			<?php endif; ?>
+			<?php if (!empty($relative['Relative']['alternate_email'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Alternate Email Address'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					echo $this->Html->link($relative['Relative']['alternate_email'], "mailto:{$relative['Relative']['alternate_email']}");
+					echo ' (' . ($relative['Relative']['publish_alternate_email'] ? __('published', true) : __('private', true)) . ')';
+					?>
+				</dd>
+			<?php endif; ?>
+			<?php if (Configure::read('profile.home_phone') && !empty($relative['Relative']['home_phone'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (home)'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					echo $relative['Relative']['home_phone'];
+					echo ' (' . ($relative['Relative']['publish_home_phone'] ? __('published', true) : __('private', true)) . ')';
+					?>
+				</dd>
+			<?php endif; ?>
+			<?php if (Configure::read('profile.work_phone') && !empty($relative['Relative']['work_phone'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (work)'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					echo $relative['Relative']['work_phone'];
+					if (!empty($relative['Relative']['work_ext'])) {
+						echo ' x' . $relative['Relative']['work_ext'];
+					}
+					echo ' (' . ($relative['Relative']['publish_work_phone'] ? __('published', true) : __('private', true)) . ')';
+					?>
+
+				</dd>
+			<?php endif; ?>
+			<?php if (Configure::read('profile.mobile_phone') && !empty($relative['Relative']['mobile_phone'])):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Phone (mobile)'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					echo $relative['Relative']['mobile_phone'];
+					echo ' (' . ($relative['Relative']['publish_mobile_phone'] ? __('published', true) : __('private', true)) . ')';
+					?>
+
+				</dd>
+			<?php
+			endif;
+		endif;
+	endforeach;
+	?>
+	</dl>
+</div>
+<?php endif; ?>
+
+<?php
+$all_teams = $this->UserCache->read('AllTeamIDs', $person['id']);
+if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 <div class="related">
 	<h3><?php __('Teams');?></h3>
 	<?php if (!empty($teams)):?>
@@ -273,8 +445,8 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 		</ul>
 	</div>
 </div>
+<?php endif; ?>
 
-<?php if ($is_logged_in):?>
  <?php if (($is_admin || $is_manager || $is_me) && (!empty($relatives) || !empty($related_to))):?>
  <div class="related">
 	<h3><?php __('Relatives');?></h3>
@@ -316,9 +488,12 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 			<td><?php $relative['PeoplePerson']['approved'] ? __('Yes') : __('No'); ?></td>
 			<td class="actions"><?php
 				echo $this->ZuluruHtml->iconLink('view_24.png', array('controller' => 'people', 'action' => 'view', 'person' => $relative['Relative']['id']));
-				echo $this->ZuluruHtml->iconLink('delete_24.png', array('controller' => 'people', 'action' => 'remove_relative', 'person' => $person['id'], 'relative' => $relative['Relative']['id']));
+				// Only full users can remove relations
+				if (!empty($person['user_id'])) {
+					echo $this->ZuluruHtml->iconLink('delete_24.png', array('controller' => 'people', 'action' => 'remove_relative', 'person' => $person['id'], 'relative' => $relative['Relative']['id']));
+				}
 				if (!$relative['PeoplePerson']['approved']) {
-					echo $this->Html->link(__('Approve', true), array('controller' => 'people', 'action' => 'approve_relative', 'person' => $person['id'], 'relative' => $relative['Relative']['id']));
+					echo $this->ZuluruHtml->iconLink('approve_24.png', array('controller' => 'people', 'action' => 'approve_relative', 'person' => $person['id'], 'relative' => $relative['Relative']['id']));
 				}
 			?></td>
 		</tr>
@@ -332,7 +507,6 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 	</div>
  </div>
  <?php endif; ?>
-<?php endif; ?>
 
 <?php if ($is_logged_in && Configure::read('feature.badges') && !empty($badges['Badge'])): ?>
 <div class="related">
@@ -367,7 +541,7 @@ $view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_cap
 </div>
 <?php endif; ?>
 
-<?php if (Configure::read('scoring.allstars') && ($is_admin || $is_manager || $is_coordinator)):?>
+<?php if (Configure::read('scoring.allstars') && ($is_admin || $is_manager || $is_coordinator) && ($this_is_player || !empty($allstars))):?>
 <div class="related">
 	<h3><?php __('Allstar Nominations');?></h3>
 	<?php if (!empty($allstars)):?>
