@@ -26,6 +26,7 @@ class PeopleController extends AppController {
 				'note',
 				'delete_note',
 				'nominate',
+				'confirm',
 		)))
 		{
 			return true;
@@ -845,7 +846,7 @@ class PeopleController extends AppController {
 			$this->Person->create();
 
 			// Handle affiliations for non-admins
-			if (!$this->is_admin) {
+			if (!$is_me || (!$this->is_admin && (Configure::read('feature.multiple_affiliates') || !$this->is_manager))) {
 				if (Configure::read('feature.affiliates')) {
 					// Manually select all affiliates the user is a manager of
 					if (is_array($this->data['Affiliate']['Affiliate'])) {
@@ -962,6 +963,20 @@ class PeopleController extends AppController {
 				'user_field' => $this->Auth->authenticate->userField,
 				'email_field' => $this->Auth->authenticate->emailField,
 		));
+	}
+
+	function confirm() {
+		Configure::write ('debug', 0);
+		$this->layout = 'ajax';
+
+		$this->Person->id = $this->UserCache->currentId();
+		if ($this->Person->save(array('first_name' => $this->UserCache->read('Person.first_name')))) {
+			// Delete the cached data, so it's reloaded next time it's needed
+			$this->UserCache->clear('Person', $this->data['Person']['id']);
+			$this->set('success', true);
+		} else {
+			$this->set('success', false);
+		}
 	}
 
 	function note() {
@@ -1919,7 +1934,7 @@ class PeopleController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('badge', true)), 'default', array('class' => 'info'));
 			$this->redirect(array('controller' => 'badges', 'action' => 'index'));
 		}
-		$this->Person->Badge->contain();
+		$this->Person->Badge->contain('Affiliate');
 		$badge = $this->Person->Badge->read(null, $url['badge']);
 		if (!$badge) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('badge', true)), 'default', array('class' => 'info'));
@@ -2307,14 +2322,14 @@ class PeopleController extends AppController {
 	}
 
 	function inactive_search() {
-		if (empty($this->data)) {
-			$this->data = array(
-				'rule' => "NOT(COMPARE(TEAM_COUNT('today') > '0'))",
-				'sort' => 'last_name',
-				'direction' => 'asc',
-			);
-		}
 		$params = $url = $this->_extractSearchParams();
+		$affiliates = $this->_applicableAffiliates();
+		if (!empty($params) || !Configure::read('feature.affiliates')) {
+			$params['rule'] = "NOT(COMPARE(TEAM_COUNT('today') > '0'))";
+		}
+		if (!Configure::read('feature.affiliates')) {
+			$params['affiliate_id'] = 1;
+		}
 
 		$this->_handleRuleSearch($params, $url);
 	}
@@ -2366,32 +2381,36 @@ class PeopleController extends AppController {
 			if (!empty($people)) {
 				$conditions = array('Person.id' => $people);
 				if (array_key_exists('affiliate_id', $params)) {
-					$admins = $this->Person->GroupsPerson->find('list', array(
-							// TODO: Eliminate hard-coded group_id
-							'conditions' => array('group_id' => 7),
-							'fields' => array('person_id', 'person_id'),
-					));
-					$conditions['OR'] = array(
+					$conditions[] = array('OR' => array(
 						"AffiliatePerson.affiliate_id" => $params['affiliate_id'],
-						'Person.id' => $admins,
-					);
+						// TODO: Eliminate hard-coded group_id
+						'group_id' => 7,
+					));
 				}
 
 				if ($this->params['url']['ext'] == 'csv') {
 					Configure::write ('debug', 0);
 					$this->set('people', $this->Person->find ('all', array(
-							'contain' => array(
-								'Affiliate',
-							),
 							'conditions' => $conditions,
+							'contain' => false,
+							'fields' => array('DISTINCT Person.id', 'Person.*'),
 							'order' => array('Person.last_name', 'Person.first_name', 'Person.id'),
-							'joins' => array(array(
-								'table' => "{$this->Person->tablePrefix}affiliates_people",
-								'alias' => 'AffiliatePerson',
-								'type' => 'LEFT',
-								'foreignKey' => false,
-								'conditions' => 'AffiliatePerson.person_id = Person.id',
-							)),
+							'joins' => array(
+								array(
+									'table' => "{$this->Person->tablePrefix}affiliates_people",
+									'alias' => 'AffiliatePerson',
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => 'AffiliatePerson.person_id = Person.id',
+								),
+								array(
+									'table' => "{$this->Person->tablePrefix}groups_people",
+									'alias' => 'GroupPerson',
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => 'GroupPerson.person_id = Person.id',
+								),
+							),
 					)));
 					$this->set('download_file_name', 'Search results');
 					$this->render('rule_search');
@@ -2402,16 +2421,25 @@ class PeopleController extends AppController {
 							'conditions' => $conditions,
 							'contain' => array(
 								'Note' => array('conditions' => array('created_person_id' => $this->UserCache->currentId())),
-								'Affiliate',
 							),
+							'fields' => array('DISTINCT Person.id', 'Person.first_name', 'Person.last_name'),
 							'limit' => Configure::read('feature.items_per_page'),
-							'joins' => array(array(
-								'table' => "{$this->Person->tablePrefix}affiliates_people",
-								'alias' => 'AffiliatePerson',
-								'type' => 'LEFT',
-								'foreignKey' => false,
-								'conditions' => 'AffiliatePerson.person_id = Person.id',
-							)),
+							'joins' => array(
+								array(
+									'table' => "{$this->Person->tablePrefix}affiliates_people",
+									'alias' => 'AffiliatePerson',
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => 'AffiliatePerson.person_id = Person.id',
+								),
+								array(
+									'table' => "{$this->Person->tablePrefix}groups_people",
+									'alias' => 'GroupPerson',
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => 'GroupPerson.person_id = Person.id',
+								),
+							),
 					));
 					$this->set('people', $this->paginate('Person'));
 				}
