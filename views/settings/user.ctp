@@ -31,6 +31,16 @@ echo $this->element('settings/banner');
 					$this->Html->tag('span', __('Use of this feature is recommended only for brand new sites wanting to ease the transition for their members.', true), array('class' => 'warning-message')),
 		),
 	));
+	echo $this->element('settings/input', array(
+		'category' => 'feature',
+		'name' => 'antispam',
+		'options' => array(
+			'label' => __('Anti-spam measures', true),
+			'type' => 'radio',
+			'options' => Configure::read('options.enable'),
+			'after' => __('Enable this to add honeypot-style anti-spam measures to the "create account" page. These measures are generally invisible to users.', true),
+		),
+	));
 	if (!$affiliate) {
 		echo $this->element('settings/input', array(
 			'category' => 'feature',
@@ -50,7 +60,7 @@ echo $this->element('settings/banner');
 			'label' => __('Photos', true),
 			'type' => 'radio',
 			'options' => Configure::read('options.enable'),
-			'after' => __('Enable or disable the option for players to upload profile photos.', true),
+			'after' => __('Enable or disable the option for people to upload profile photos.', true),
 		),
 	));
 	echo $this->element('settings/input', array(
@@ -70,7 +80,7 @@ echo $this->element('settings/banner');
 			'label' => __('Gravatar', true),
 			'type' => 'radio',
 			'options' => Configure::read('options.enable'),
-			'after' => __('Enable or disable the option for players to use Gravatar for their photo.', true),
+			'after' => __('Enable or disable the option for people to use Gravatar for their photo.', true),
 		),
 	));
 	echo $this->element('settings/input', array(
@@ -80,7 +90,7 @@ echo $this->element('settings/banner');
 			'label' => __('Handle document uploads', true),
 			'type' => 'radio',
 			'options' => Configure::read('options.enable'),
-			'after' => __('Enable or disable uploading of documents by players (e.g. as an alternative to faxing or emailing).', true),
+			'after' => __('Enable or disable uploading of documents by people (e.g. as an alternative to faxing or emailing).', true),
 		),
 	));
 	echo $this->element('settings/input', array(
@@ -90,7 +100,7 @@ echo $this->element('settings/banner');
 			'label' => __('Enable annotations', true),
 			'type' => 'radio',
 			'options' => Configure::read('options.enable'),
-			'after' => sprintf(__('Allow players to attach notes to other players, teams, games and %s.', true), Configure::read('ui.fields')),
+			'after' => sprintf(__('Allow people to attach notes to other people, teams, games and %s.', true), Configure::read('ui.fields')),
 		),
 	));
 	echo $this->element('settings/input', array(

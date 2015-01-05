@@ -26,6 +26,8 @@ class PeopleController extends AppController {
 				'note',
 				'delete_note',
 				'nominate',
+				'nominate_badge',
+				'nominate_badge_reason',
 				'confirm',
 		)))
 		{
@@ -36,7 +38,7 @@ class PeopleController extends AppController {
 		if (in_array ($this->params['action'], array(
 				'edit',
 				'preferences',
-				'add_relative',
+				'link_relative',
 				'waivers',
 				'photo_upload',
 				'photo_resize',
@@ -51,6 +53,17 @@ class PeopleController extends AppController {
 			$person = $this->_arg('person');
 			$relatives = $this->UserCache->read('RelativeIDs');
 			if (!$person || $person == $this->UserCache->currentId() || in_array($person, $relatives)) {
+				return true;
+			}
+		}
+
+		// Parents can perform these operations on their own account
+		if (in_array ($this->params['action'], array(
+				'add_relative',
+		)))
+		{
+			// TODO: Eliminate hard-coded group_id
+			if (in_array(1, $this->UserCache->read('GroupIDs'))) {
 				return true;
 			}
 		}
@@ -170,6 +183,21 @@ class PeopleController extends AppController {
 				'order' => array('Affiliate.name', 'Person.last_name', 'Person.first_name'),
 				'limit' => Configure::read('feature.items_per_page'),
 		);
+
+		$group_id = $this->_arg('group');
+		if ($group_id) {
+			$this->paginate['joins'][] = array(
+				'table' => "{$this->Person->tablePrefix}groups_people",
+				'alias' => 'GroupPerson',
+				'type' => 'LEFT',
+				'foreignKey' => false,
+				'conditions' => 'GroupPerson.person_id = Person.id',
+			);
+			$this->paginate['conditions']['GroupPerson.group_id'] = $group_id;
+			$group = $this->Person->Group->field('name', array('id' => $group_id));
+			$this->set(compact('group'));
+		}
+
 		$this->set('people', $this->paginate());
 	}
 
@@ -208,21 +236,34 @@ class PeopleController extends AppController {
 				'recursive' => -1,
 		));
 
-		// Get the list of accounts by gender
+		// Following queries all look only at players
+		// TODO: Eliminate hard-coded group_ids
+		$joins[] = array(
+			'table' => "{$this->Person->tablePrefix}groups_people",
+			'alias' => 'GroupPerson',
+			'type' => 'LEFT',
+			'foreignKey' => false,
+			'conditions' => 'GroupPerson.person_id = Person.id',
+		);
+
+		// Get the list of players by gender
 		$gender_count = $this->Person->find('all', array(
 				'fields' => array(
 					'Affiliate.*',
 					'Person.gender',
 					'COUNT(Person.id) AS count',
 				),
-				'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
+				'conditions' => array(
+					'AffiliatePerson.affiliate_id' => $affiliates,
+					'GroupPerson.group_id' => 2,
+				),
 				'joins' => $joins,
 				'group' => array('AffiliatePerson.affiliate_id', 'Person.gender'),
 				'order' => array('Affiliate.name', 'Person.gender' => 'DESC'),
 				'recursive' => -1,
 		));
 
-		// Get the list of accounts by age
+		// Get the list of players by age
 		if (Configure::read('profile.birthdate')) {
 			$age_count = $this->Person->find('all', array(
 					'fields' => array(
@@ -232,6 +273,7 @@ class PeopleController extends AppController {
 					),
 					'conditions' => array(
 						'AffiliatePerson.affiliate_id' => $affiliates,
+						'GroupPerson.group_id' => 2,
 						array('birthdate !=' => null),
 						array('birthdate !=' => '0000-00-00'),
 					),
@@ -242,7 +284,7 @@ class PeopleController extends AppController {
 			));
 		}
 
-		// Get the list of accounts by year started
+		// Get the list of players by year started
 		if (Configure::read('profile.year_started')) {
 			$started_count = $this->Person->find('all', array(
 					'fields' => array(
@@ -250,7 +292,10 @@ class PeopleController extends AppController {
 						'Person.year_started',
 						'COUNT(Person.id) AS count',
 					),
-					'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
+					'conditions' => array(
+						'AffiliatePerson.affiliate_id' => $affiliates,
+						'GroupPerson.group_id' => 2,
+					),
 					'joins' => $joins,
 					'group' => array('AffiliatePerson.affiliate_id', 'year_started'),
 					'order' => array('Affiliate.name', 'year_started'),
@@ -258,7 +303,7 @@ class PeopleController extends AppController {
 			));
 		}
 
-		// Get the list of accounts by skill level
+		// Get the list of players by skill level
 		if (Configure::read('profile.skill_level')) {
 			$skill_count = $this->Person->find('all', array(
 					'fields' => array(
@@ -266,7 +311,10 @@ class PeopleController extends AppController {
 						'Person.skill_level',
 						'COUNT(Person.id) AS count',
 					),
-					'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
+					'conditions' => array(
+						'AffiliatePerson.affiliate_id' => $affiliates,
+						'GroupPerson.group_id' => 2,
+					),
 					'joins' => $joins,
 					'group' => array('AffiliatePerson.affiliate_id', 'skill_level'),
 					'order' => array('Affiliate.name', 'skill_level' => 'DESC'),
@@ -274,7 +322,7 @@ class PeopleController extends AppController {
 			));
 		}
 
-		// Get the list of accounts by city
+		// Get the list of players by city
 		if (Configure::read('profile.addr_city')) {
 			$city_count = $this->Person->find('all', array(
 					'fields' => array(
@@ -282,7 +330,10 @@ class PeopleController extends AppController {
 						'Person.addr_city',
 						'COUNT(Person.id) AS count',
 					),
-					'conditions' => array('AffiliatePerson.affiliate_id' => $affiliates),
+					'conditions' => array(
+						'AffiliatePerson.affiliate_id' => $affiliates,
+						'GroupPerson.group_id' => 2,
+					),
 					'joins' => $joins,
 					'group' => array('AffiliatePerson.affiliate_id', 'addr_city HAVING count > 2'),
 					'order' => array('Affiliate.name', 'count' => 'DESC'),
@@ -291,13 +342,6 @@ class PeopleController extends AppController {
 		}
 
 		// Get the list of accounts by group
-		$joins[] = array(
-			'table' => "{$this->Person->tablePrefix}groups_people",
-			'alias' => 'GroupPerson',
-			'type' => 'LEFT',
-			'foreignKey' => false,
-			'conditions' => 'GroupPerson.person_id = Person.id',
-		);
 		$joins[] = array(
 			'table' => "{$this->Person->tablePrefix}groups",
 			'alias' => 'Group',
@@ -835,7 +879,7 @@ class PeopleController extends AppController {
 		$this->set(compact('id', 'is_me'));
 
 		$this->_loadAddressOptions();
-		$this->_loadGroupOptions();
+		$this->_loadGroupOptions(true);
 		$this->_loadAffiliateOptions();
 
 		$sport = reset(array_keys(Configure::read('options.sport')));
@@ -890,8 +934,6 @@ class PeopleController extends AppController {
 				if (!empty($invalid_groups)) {
 					$this->Person->Group->validationErrors['Group'] = __('You have selected an invalid group.', true);
 				}
-			} else {
-				$selected_groups = array();
 			}
 
 			if ($this->Person->validates() && $this->Person->Group->validates() && $this->Person->Affiliate->validates()) {
@@ -1086,6 +1128,74 @@ class PeopleController extends AppController {
 	}
 
 	function add_relative() {
+		$this->_loadAffiliateOptions();
+
+		if (!empty($this->data)) {
+			// Set the default error message in advance. If it saves successfully, this will be overwritten.
+			$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('profile', true)), 'default', array('class' => 'warning'));
+
+			// Handle affiliations
+			if (Configure::read('feature.affiliates')) {
+				if (Configure::read('feature.multiple_affiliates')) {
+					if (empty($this->data['Affiliate']['Affiliate'][0])) {
+						$this->Person->Affiliate->validationErrors['Affiliate'] = __('You must select at least one affiliate that you are interested in.', true);
+					}
+				} else {
+					if (empty($this->data['Affiliate']['Affiliate'][0]) || count($this->data['Affiliate']['Affiliate']) > 1) {
+						$this->Person->Affiliate->validationErrors['Affiliate'] = __('You must select an affiliate that you are interested in.', true);
+					}
+				}
+			} else {
+				$this->data['Affiliate']['Affiliate'] = array(1);
+			}
+
+			// Tweak some data to be saved
+			// Assume any secondary profiles are players, with group_id = 2
+			$this->data['Group'] = array('Group' => array(2));
+			$this->data['Person']['complete'] = true;
+			if (Configure::read('feature.auto_approve')) {
+				$this->data['Person']['status'] = 'active';
+			}
+
+			$transaction = new DatabaseTransaction($this->Person);
+			$this->Person->create();
+			if (!$this->Person->saveAll($this->data)) {
+				return;
+			}
+			$link = array('person_id' => $this->UserCache->currentId(), 'relative_id' => $this->Person->id, 'approved' => true);
+			if (!$this->Person->PeoplePerson->save($link, array('validate' => false))) {
+				return;
+			}
+			$this->UserCache->clear('Relatives');
+			$this->UserCache->clear('RelativeIDs');
+
+			if (Configure::read('feature.auto_approve')) {
+				$this->Session->setFlash(sprintf(__('The %s has been saved', true), __('new profile', true)), 'default', array('class' => 'success'));
+			} else {
+				$msg = __('Your account has been created.', true);
+				$msg .= ' ' . __('It must be approved by an administrator before you will have full access to the site.', true);
+				$this->Session->setFlash($msg, 'default', array('class' => 'success'));
+			}
+
+			// There may be callbacks to handle
+			// TODO: How to handle this in conjunction with third-party auth systems?
+			$this->data['Person']['id'] = $this->Person->id;
+			$components = Configure::read('callbacks.user');
+			foreach ($components as $name => $config) {
+				$component = $this->_getComponent('User', $name, $this, false, $config);
+				$component->onAdd($this->data);
+			}
+
+			$transaction->commit();
+			if (isset($this->params['form']['continue'])) {
+				$this->data = null;
+			} else {
+				$this->redirect('/');
+			}
+		}
+	}
+
+	function link_relative() {
 		$person_id = $this->_arg('person');
 		$person = $this->UserCache->read('Person', $person_id);
 		if (!$person) {
@@ -1097,7 +1207,7 @@ class PeopleController extends AppController {
 		$relative_id = $this->_arg('relative');
 		if ($relative_id !== null) {
 			if ($relative_id == $person_id) {
-				$this->Session->setFlash(__('You can\'t add yourself as a relative!', true), 'default', array('class' => 'info'));
+				$this->Session->setFlash(__('You can\'t link yourself as a relative!', true), 'default', array('class' => 'info'));
 			} else {
 				$relative = $this->UserCache->read('Person', $relative_id);
 				if (!$relative) {
@@ -1120,8 +1230,8 @@ class PeopleController extends AppController {
 						if (!$this->_sendMail (array (
 								'to' => $relative,
 								'replyTo' => $person,
-								'subject' => 'You have been added as a relative',
-								'template' => 'relative_add',
+								'subject' => 'You have been linked as a relative',
+								'template' => 'relative_link',
 								'sendAs' => 'both',
 						)))
 						{
@@ -1132,11 +1242,11 @@ class PeopleController extends AppController {
 						$this->UserCache->clear('RelativeIDs', $person_id);
 						$this->UserCache->clear('RelatedTo', $relative_id);
 						$this->UserCache->clear('RelatedToIDs', $relative_id);
-						$this->Session->setFlash(sprintf(__('Added %s as relative; you will not have access to their information until they have approved this.', true), $relative['full_name']), 'default', array('class' => 'success'));
+						$this->Session->setFlash(sprintf(__('Linked %s as relative; you will not have access to their information until they have approved this.', true), $relative['full_name']), 'default', array('class' => 'success'));
 						$this->redirect('/');
 					} else {
-						$this->Session->setFlash(sprintf(__('Failed to add %s as relative.', true), $relative['full_name']), 'default', array('class' => 'warning'));
-						$this->redirect(array('action' => 'add_relative', 'person' => $person_id));
+						$this->Session->setFlash(sprintf(__('Failed to link %s as relative.', true), $relative['full_name']), 'default', array('class' => 'warning'));
+						$this->redirect(array('action' => 'link_relative', 'person' => $person_id));
 					}
 				}
 			}
@@ -1203,7 +1313,7 @@ class PeopleController extends AppController {
 				'sendAs' => 'both',
 		)))
 		{
-			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 		}
 
 		$this->redirect(array('action' => 'view', 'person' => $person_id));
@@ -1266,7 +1376,7 @@ class PeopleController extends AppController {
 				'sendAs' => 'both',
 		)))
 		{
-			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 		}
 
 		$this->redirect(array('action' => 'view', 'person' => $person_id));
@@ -1997,10 +2107,10 @@ class PeopleController extends AppController {
 		if (!empty($badge['Person'])) {
 			if ($badge['Badge']['active']) {
 				// TODO: Allow multiple copies of the badge?
-				$this->Session->setFlash(__('This player already has this badge', true), 'default', array('class' => 'info'));
+				$this->Session->setFlash(__('This person already has this badge', true), 'default', array('class' => 'info'));
 				$this->redirect(array('action' => 'nominate_badge', 'badge' => $badge_id));
 			} else {
-				$this->Session->setFlash(__('This player has already been nominated for this badge', true), 'default', array('class' => 'info'));
+				$this->Session->setFlash(__('This person has already been nominated for this badge', true), 'default', array('class' => 'info'));
 				$this->redirect(array('action' => 'nominate_badge', 'badge' => $badge_id));
 			}
 		}
@@ -2539,16 +2649,17 @@ class PeopleController extends AppController {
 			$dup_id = null;
 		}
 
-		$this->Person->contain('Group', $this->Auth->authenticate->name);
+		$this->Person->contain('Group', 'Related', $this->Auth->authenticate->name);
 		$person_id = $this->data['Person']['id'];
 		$person = $this->Person->read(null, $person_id);
 		if (!empty ($dup_id)) {
-			$this->Person->contain('Group', $this->Auth->authenticate->name);
+			$this->Person->contain('Group', 'Related', $this->Auth->authenticate->name);
 			$existing = $this->Person->read(null, $dup_id);
 		}
 
 		if (empty($person['Persion']['user_id'])) {
 			$this->Person->beforeValidateChild();
+			unset($person[$this->Auth->authenticate->name]);
 		}
 
 		// TODO: Eliminate this hard-coded group_id
@@ -2573,9 +2684,16 @@ class PeopleController extends AppController {
 
 				$this->set('person', $saved);
 
+				if (empty($saved['Person']['user_id'])) {
+					$name = $saved['Person']['full_name'];
+					$type = __('Profile', true);
+				} else {
+					$name = $saved['Person']['user_name'];
+					$type = __('Account', true);
+				}
 				if (!$this->_sendMail (array (
 						'to' => $person,
-						'subject' => Configure::read('organization.name') . ' Account Activation for ' . $saved['Person']['user_name'],
+						'subject' => sprintf(__('%s %s Activation for %s', true), Configure::read('organization.name'), $type, $name),
 						'template' => 'account_approved',
 						'sendAs' => 'both',
 				)))
@@ -2596,6 +2714,10 @@ class PeopleController extends AppController {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
 				}
 				Cache::delete("person/$person_id", 'file');
+				foreach ($person['Related'] as $relative) {
+					$this->UserCache->clear('Relatives', $relative['id']);
+					$this->UserCache->clear('RelativeIDs', $relative['id']);
+				}
 				break;
 
 			case 'delete_duplicate':
@@ -2612,6 +2734,10 @@ class PeopleController extends AppController {
 					break;
 				}
 				Cache::delete("person/$person_id", 'file');
+				foreach ($person['Related'] as $relative) {
+					$this->UserCache->clear('Relatives', $relative['id']);
+					$this->UserCache->clear('RelativeIDs', $relative['id']);
+				}
 
 				$this->set(compact('person', 'existing'));
 
@@ -2676,6 +2802,14 @@ class PeopleController extends AppController {
 				}
 				Cache::delete("person/$person_id", 'file');
 				Cache::delete("person/$dup_id", 'file');
+				foreach ($person['Related'] as $relative) {
+					$this->UserCache->clear('Relatives', $relative['id']);
+					$this->UserCache->clear('RelativeIDs', $relative['id']);
+				}
+				foreach ($existing['Related'] as $relative) {
+					$this->UserCache->clear('Relatives', $relative['id']);
+					$this->UserCache->clear('RelativeIDs', $relative['id']);
+				}
 
 				$this->set(compact('person', 'existing'));
 

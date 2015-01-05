@@ -317,12 +317,23 @@ class AppController extends Controller {
 	/**
 	 * Read and set variables for the database-based group options.
 	 */
-	function _loadGroupOptions() {
-		$conditions = array('active' => true);
-		if ($this->is_manager) {
-			$conditions['level <='] = 5;
-		} else if (!$this->is_admin) {
-			$conditions['level <'] = 5;
+	function _loadGroupOptions($force_players = false) {
+		if ($force_players) {
+			$conditions = array('OR' => array(
+					// We always want to include players, even if they aren't a valid "create account" group.
+					// TODO: eliminate hard-coded group_id
+					'id' => 2,
+					'active' => true,
+			));
+		} else {
+			$conditions = array('active' => true);
+		}
+		if (!$this->is_admin) {
+			if ($this->is_manager) {
+				$conditions['level <='] = 5;
+			} else {
+				$conditions['level <'] = 5;
+			}
 		}
 		$groups = $this->Group->find('all', array(
 			'conditions' => $conditions,
@@ -330,7 +341,11 @@ class AppController extends Controller {
 		));
 		$group_list = array();
 		foreach ($groups as $group) {
-			$group_list[$group['Group']['id']] = "{$group['Group']['name']}: {$group['Group']['description']}";
+			if (!empty($group['Group']['description'])) {
+				$group_list[$group['Group']['id']] = "{$group['Group']['name']}: {$group['Group']['description']}";
+			} else {
+				$group_list[$group['Group']['id']] = $group['Group']['name'];
+			}
 		}
 		$this->set('groups', $group_list);
 	}
@@ -665,6 +680,7 @@ class AppController extends Controller {
 		if ($this->is_manager) {
 			$affiliates = $this->_applicableAffiliates(true);
 		}
+		$groups = $this->UserCache->read('GroupIDs');
 
 		if ($this->is_logged_in) {
 			$this->_addMenuItem ('Home', array('controller' => 'all', 'action' => 'splash'));
@@ -672,7 +688,11 @@ class AppController extends Controller {
 			$this->_addMenuItem ('View', array('controller' => 'people', 'action' => 'view'), 'My Profile');
 			$this->_addMenuItem ('Edit', array('controller' => 'people', 'action' => 'edit'), 'My Profile');
 			$this->_addMenuItem ('Preferences', array('controller' => 'people', 'action' => 'preferences'), 'My Profile');
-			$this->_addMenuItem ('Link new relative', array('controller' => 'people', 'action' => 'add_relative'), 'My Profile');
+			// TODO: Eliminate hard-coded group_id here and below
+			if (in_array(1, $groups)) {
+				$this->_addMenuItem ('Add new child', array('controller' => 'people', 'action' => 'add_relative'), 'My Profile');
+			}
+			$this->_addMenuItem ('Link to relative', array('controller' => 'people', 'action' => 'link_relative'), 'My Profile');
 			$this->_addMenuItem ('Waiver history', array('controller' => 'people', 'action' => 'waivers'), 'My Profile');
 			$this->_addMenuItem ('Change password', array('controller' => 'users', 'action' => 'change_password'), 'My Profile');
 			if (Configure::read('feature.photos')) {
@@ -683,13 +703,66 @@ class AppController extends Controller {
 			}
 		}
 
+		// Depending on the account type, and the available registrations, this may not be available
+		// Admins and managers, anyone not logged in, and anyone with any registration history always get it
+		$show_registration = false;
 		if (Configure::read('feature.registration')) {
-			$this->_addMenuItem ('Registration', array('controller' => 'events', 'action' => 'wizard'));
-			$this->_addMenuItem ('Wizard', array('controller' => 'events', 'action' => 'wizard'), 'Registration');
-			$this->_addMenuItem ('All events', array('controller' => 'events', 'action' => 'index'), 'Registration');
-			if ($this->is_logged_in) {
-				$this->_addMenuItem ('My history', array('controller' => 'people', 'action' => 'registrations'), 'Registration');
+			$show_registration = $this->is_admin || $this->is_manager || !$this->is_logged_in;
+			$registrations = $this->UserCache->read('Registrations');
+			if (!$show_registration && !empty($registrations)) {
+				$show_registration = true;
 			}
+
+			// Parents and players always get it
+			if (!$show_registration) {
+				$always = array_intersect($groups, array(1,2));
+				if (!empty($always)) {
+					$show_registration = true;
+				}
+			}
+
+			// If there are any generic events available, everyone gets it
+			if (!$show_registration) {
+				$affiliates = $this->_applicableAffiliateIDs();
+				if ($this->Person->Registration->Event->find('count', array(
+						'contain' => 'EventType',
+						'conditions' => array(
+							'EventType.type' => 'generic',
+							"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
+							"Event.close > CURDATE()",
+							'Event.affiliate_id' => $affiliates,
+						),
+				)) > 0)
+				{
+					$show_registration = true;
+				}
+			}
+
+			// If there are any team events available, coaches get it
+			if (!$show_registration && in_array(3, $groups)) {
+				if ($this->Person->Registration->Event->find('count', array(
+						'contain' => 'EventType',
+						'conditions' => array(
+							'EventType.type' => 'team',
+							"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
+							"Event.close > CURDATE()",
+							'Event.affiliate_id' => $affiliates,
+						),
+				)) > 0)
+				{
+					$show_registration = true;
+				}
+			}
+
+			if ($show_registration) {
+				$this->_addMenuItem ('Registration', array('controller' => 'events', 'action' => 'wizard'));
+				$this->_addMenuItem ('Wizard', array('controller' => 'events', 'action' => 'wizard'), 'Registration');
+				$this->_addMenuItem ('All events', array('controller' => 'events', 'action' => 'index'), 'Registration');
+				if ($this->is_logged_in && !empty($registrations)) {
+					$this->_addMenuItem ('My history', array('controller' => 'people', 'action' => 'registrations'), 'Registration');
+				}
+			}
+
 			if ($this->is_admin || $this->is_manager) {
 				$this->_addMenuItem ('Preregistrations', array('controller' => 'preregistrations', 'action' => 'index'), 'Registration');
 				$this->_addMenuItem ('List', array('controller' => 'preregistrations', 'action' => 'index'), array('Registration', 'Preregistrations'));
@@ -713,6 +786,16 @@ class AppController extends Controller {
 		if ($this->is_logged_in) {
 			$this->_initPersonalMenu();
 			$relatives = $this->UserCache->read('Relatives');
+			if (!empty($relatives)) {
+				$name = $this->UserCache->read('Person.first_name');
+				$this->_addMenuItem ($name, array('controller' => 'people', 'action' => 'view'), array('My Profile', 'View'));
+				$this->_addMenuItem ($name, array('controller' => 'people', 'action' => 'edit'), array('My Profile', 'Edit'));
+				$this->_addMenuItem ($name, array('controller' => 'people', 'action' => 'preferences'), array('My Profile', 'Preferences'));
+				$this->_addMenuItem ($name, array('controller' => 'people', 'action' => 'waivers'), array('My Profile', 'Waiver history'));
+				if ($show_registration) {
+					$this->_addMenuItem ($name, array('controller' => 'events', 'action' => 'wizard'), array('Registration', 'Wizard'));
+				}
+			}
 			foreach ($relatives as $relative) {
 				if ($relative['PeoplePerson']['approved']) {
 					$this->_initPersonalMenu($relative);
@@ -730,7 +813,6 @@ class AppController extends Controller {
 			if ($this->is_admin || $this->is_manager) {
 				$this->_addMenuItem ('Unassigned teams', array('controller' => 'teams', 'action' => 'unassigned'), 'Teams');
 			}
-			$this->_addMenuItem ('My history', array('controller' => 'people', 'action' => 'teams'), 'Teams');
 		}
 
 		if ($this->is_logged_in && Configure::read('feature.franchises')) {
@@ -766,10 +848,10 @@ class AppController extends Controller {
 		}
 
 		if ($this->is_logged_in) {
-			$this->_addMenuItem ('Search', array('controller' => 'people', 'action' => 'search'), 'Players');
+			$this->_addMenuItem ('Search', array('controller' => 'people', 'action' => 'search'), 'People');
 			if (Configure::read('feature.badges')) {
-				$this->_addMenuItem ('Badges', array('controller' => 'badges', 'action' => 'index'), 'Players');
-				$this->_addMenuItem ('Nominate', array('controller' => 'people', 'action' => 'nominate'), array('Players', 'Badges'));
+				$this->_addMenuItem ('Badges', array('controller' => 'badges', 'action' => 'index'), 'People');
+				$this->_addMenuItem ('Nominate', array('controller' => 'people', 'action' => 'nominate'), array('People', 'Badges'));
 				if ($this->is_admin || $this->is_manager) {
 					$new = $this->Person->Badge->find ('count', array(
 						'joins' => array(
@@ -788,18 +870,18 @@ class AppController extends Controller {
 					));
 					if ($new > 0) {
 						$this->set('new_nominations', $new);
-						$this->_addMenuItem ("Approve nominations ($new pending)", array('controller' => 'people', 'action' => 'approve_badges'), array('Players', 'Badges'));
+						$this->_addMenuItem ("Approve nominations ($new pending)", array('controller' => 'people', 'action' => 'approve_badges'), array('People', 'Badges'));
 					}
-					$this->_addMenuItem ('Deactivated', array('controller' => 'badges', 'action' => 'deactivated'), array('Players', 'Badges'));
+					$this->_addMenuItem ('Deactivated', array('controller' => 'badges', 'action' => 'deactivated'), array('People', 'Badges'));
 				}
 			}
 		}
 
 		if ($this->is_admin || $this->is_manager) {
-			$this->_addMenuItem ('By name', array('controller' => 'people', 'action' => 'search'), array('Players', 'Search'));
-			$this->_addMenuItem ('By rule', array('controller' => 'people', 'action' => 'rule_search'), array('Players', 'Search'));
-			$this->_addMenuItem ('By league', array('controller' => 'people', 'action' => 'league_search'), array('Players', 'Search'));
-			$this->_addMenuItem ('Inactive', array('controller' => 'people', 'action' => 'inactive_search'), array('Players', 'Search'));
+			$this->_addMenuItem ('By name', array('controller' => 'people', 'action' => 'search'), array('People', 'Search'));
+			$this->_addMenuItem ('By rule', array('controller' => 'people', 'action' => 'rule_search'), array('People', 'Search'));
+			$this->_addMenuItem ('By league', array('controller' => 'people', 'action' => 'league_search'), array('People', 'Search'));
+			$this->_addMenuItem ('Inactive', array('controller' => 'people', 'action' => 'inactive_search'), array('People', 'Search'));
 
 			if (!isset ($this->Person)) {
 				$this->Person = ClassRegistry::init ('Person');
@@ -823,7 +905,7 @@ class AppController extends Controller {
 			));
 			if ($new > 0) {
 				$this->set('new_accounts', $new);
-				$this->_addMenuItem ("Approve new accounts ($new pending)", array('controller' => 'people', 'action' => 'list_new'), 'Players');
+				$this->_addMenuItem ("Approve new accounts ($new pending)", array('controller' => 'people', 'action' => 'list_new'), 'People');
 			}
 
 			if (!isset ($this->Person->Upload) &&
@@ -841,7 +923,7 @@ class AppController extends Controller {
 				));
 				if ($new > 0) {
 					$this->set('new_photos', $new);
-					$this->_addMenuItem ("Approve new photos ($new pending)", array('controller' => 'people', 'action' => 'approve_photos'), 'Players');
+					$this->_addMenuItem ("Approve new photos ($new pending)", array('controller' => 'people', 'action' => 'approve_photos'), 'People');
 				}
 			}
 
@@ -854,12 +936,24 @@ class AppController extends Controller {
 				));
 				if ($new > 0) {
 					$this->set('new_documents', $new);
-					$this->_addMenuItem ("Approve new documents ($new pending)", array('controller' => 'people', 'action' => 'approve_documents'), 'Players');
+					$this->_addMenuItem ("Approve new documents ($new pending)", array('controller' => 'people', 'action' => 'approve_documents'), 'People');
 				}
 			}
 
-			$this->_addMenuItem ('List all', array('controller' => 'people', 'action' => 'index'), 'Players');
-			$this->_addMenuItem ('Bulk import', array('controller' => 'users', 'action' => 'import'), 'Players');
+			$this->_addMenuItem ('List all', array('controller' => 'people', 'action' => 'index'), 'People');
+			$groups = $this->Person->Group->find('list', array(
+				'conditions' => array('OR' => array(
+					// We always want to include players, even if they aren't a valid "create account" group.
+					// TODO: eliminate hard-coded group_id
+					'id' => 2,
+					'active' => true,
+				)),
+				'order' => array('Group.level', 'Group.id'),
+			));
+			foreach ($groups as $group => $name) {
+				$this->_addMenuItem (Inflector::pluralize($name), array('controller' => 'people', 'action' => 'index', 'group' => $group), array('People', 'List all'));
+			}
+			$this->_addMenuItem ('Bulk import', array('controller' => 'users', 'action' => 'import'), 'People');
 
 			$this->_addMenuItem ('Newsletters', array('controller' => 'newsletters', 'action' => 'index'));
 			$this->_addMenuItem ('Upcoming', array('controller' => 'newsletters', 'action' => 'index'), 'Newsletters');
@@ -959,7 +1053,7 @@ class AppController extends Controller {
 		$this->_addMenuItem ('Help index', array('controller' => 'help'), 'Help');
 		$this->_addMenuItem ('New users', array('controller' => 'help', 'action' => 'guide', 'new_user'), 'Help');
 		$this->_addMenuItem ('Advanced users', array('controller' => 'help', 'action' => 'guide', 'advanced'), 'Help');
-		$this->_addMenuItem ('Captains', array('controller' => 'help', 'action' => 'guide', 'captain'), 'Help');
+		$this->_addMenuItem ('Coaches/Captains', array('controller' => 'help', 'action' => 'guide', 'captain'), 'Help');
 		if ($this->is_admin || $this->is_manager || $this->UserCache->read('DivisionIDs')) {
 			$this->_addMenuItem ('Coordinators', array('controller' => 'help', 'action' => 'guide', 'coordinator'), 'Help');
 		}
@@ -974,9 +1068,9 @@ class AppController extends Controller {
 		}
 
 		if ($this->is_admin || $this->is_manager) {
-			$this->_addMenuItem ('Statistics', array('controller' => 'people', 'action' => 'statistics'), 'Players');
-			$this->_addMenuItem ('Participation', array('controller' => 'people', 'action' => 'participation'), array('Players', 'Statistics'));
-			$this->_addMenuItem ('Retention', array('controller' => 'people', 'action' => 'retention'), array('Players', 'Statistics'));
+			$this->_addMenuItem ('Statistics', array('controller' => 'people', 'action' => 'statistics'), 'People');
+			$this->_addMenuItem ('Participation', array('controller' => 'people', 'action' => 'participation'), array('People', 'Statistics'));
+			$this->_addMenuItem ('Retention', array('controller' => 'people', 'action' => 'retention'), array('People', 'Statistics'));
 			$this->_addMenuItem ('Statistics', array('controller' => 'teams', 'action' => 'statistics'), 'Teams');
 			if (Configure::read('feature.registration')) {
 				$this->_addMenuItem ('Statistics', array('controller' => 'registrations', 'action' => 'statistics'), 'Registration');
@@ -990,7 +1084,7 @@ class AppController extends Controller {
 			if (!$this->is_logged_in) {
 				$this->_addMenuItem ('Create account', array('controller' => 'users', 'action' => 'create_account'));
 			} else if ($this->is_admin || $this->is_manager) {
-				$this->_addMenuItem ('Create account', array('controller' => 'users', 'action' => 'create_account'), 'Players');
+				$this->_addMenuItem ('Create account', array('controller' => 'users', 'action' => 'create_account'), 'People');
 			}
 		}
 
@@ -1009,6 +1103,10 @@ class AppController extends Controller {
 	function _initPersonalMenu($relative = null) {
 		if ($relative) {
 			$id = $relative['Relative']['id'];
+			$this->_addMenuItem ($relative['Relative']['first_name'], array('controller' => 'people', 'action' => 'view', 'person' => $id), array('My Profile', 'View'));
+			$this->_addMenuItem ($relative['Relative']['first_name'], array('controller' => 'people', 'action' => 'edit', 'person' => $id), array('My Profile', 'Edit'));
+			$this->_addMenuItem ($relative['Relative']['first_name'], array('controller' => 'people', 'action' => 'preferences', 'person' => $id), array('My Profile', 'Preferences'));
+			$this->_addMenuItem ($relative['Relative']['first_name'], array('controller' => 'people', 'action' => 'waivers', 'person' => $id), array('My Profile', 'Waiver history'));
 		} else {
 			$id = null;
 		}
@@ -1018,11 +1116,29 @@ class AppController extends Controller {
 			if (!empty ($unpaid)) {
 				$this->_addMenuItem ('Checkout', array('controller' => 'registrations', 'action' => 'checkout'), 'Registration');
 			}
+
+			if ($relative) {
+				$registrations = $this->UserCache->read('Registrations', $id);
+				if (!empty($registrations)) {
+					$this->_addMenuItem ('History', array('controller' => 'people', 'action' => 'registrations', 'person' => $id), array('Registration', $relative['Relative']['first_name']));
+				}
+				$this->_addMenuItem ($relative['Relative']['first_name'], array('controller' => 'events', 'action' => 'wizard', 'act_as' => $id), array('Registration', 'Wizard'));
+			}
 		}
 
 		$teams = $this->UserCache->read('Teams', $id);
 		foreach ($teams as $team) {
 			$this->_addTeamMenuItems ($team, $relative);
+		}
+		$all_teams = $this->UserCache->read('AllTeamIDs');
+		if (!empty($all_teams)) {
+			$this->_addMenuItem ('My history', array('controller' => 'people', 'action' => 'teams'), 'Teams');
+		}
+		if ($relative) {
+			$all_teams = $this->UserCache->read('AllTeamIDs', $id);
+			if (!empty($all_teams)) {
+				$this->_addMenuItem ('History', array('controller' => 'people', 'action' => 'teams', 'person' => $id), array('Teams', $relative['Relative']['first_name']));
+			}
 		}
 
 		if (!$relative) {
@@ -1355,7 +1471,7 @@ class AppController extends Controller {
 		}
 
 		// If there are no recipients, don't even bother trying to send
-		if (empty($opts['to']) && empty($opts['cc']) && empty($opts['bcc'])) {
+		if (empty($opts['to'])) {
 			return (array_key_exists('ignore_empty_address', $opts) && $opts['ignore_empty_address']);
 		}
 
@@ -1369,7 +1485,7 @@ class AppController extends Controller {
 		if (empty($email->attachments)) {
 			$email->attachments = array();
 		}
-		if (array_key_exists ('attachments', $opts)) {
+		if (!empty($opts['attachments'])) {
 			$email->attachments = array_merge($email->attachments, $opts['attachments']);
 		}
 		if (!empty($email->attachments)) {
@@ -1401,7 +1517,9 @@ class AppController extends Controller {
 			} else if (!empty($input['email'])) {
 				$emails[$input['email']] = $input['email'];
 			}
-			if (!empty($input['alternate_email'])) {
+			if (!empty($input['alternate_email_formatted'])) {
+				$emails[$input['alternate_email']] = $input['alternate_email_formatted'];
+			} else if (!empty($input['alternate_email'])) {
 				$emails[$input['alternate_email']] = $input['alternate_email'];
 			}
 

@@ -68,9 +68,9 @@ $collapse = !empty($this->data['Division']['id']);
 			));
 			echo $this->ZuluruForm->input('Division.capt_list', array(
 				'div' => 'input advanced',
-				'label' => __('Captain Email List', true),
+				'label' => __('Coach/Captain Email List', true),
 				'size' => 70,
-				'after' => $this->Html->para (null, __('An email alias for all captains of this division.', true)),
+				'after' => $this->Html->para (null, __('An email alias for all coaches/captains of this division.', true)),
 			));
 			echo $this->ZuluruForm->input('Division.header', array(
 				'div' => 'input advanced',
@@ -251,7 +251,7 @@ $collapse = !empty($this->data['Division']['id']);
 				'empty' => '---',
 				'label' => 'Spirit Display',
 				'default' => 'all',
-				'after' => $this->Html->para (null, __('Control spirit display. "All" shows numeric scores and survey answers (if applicable) to any player. "Numeric" shows game scores but not survey answers. "Symbols Only" shows only star, check, and X, with no numeric values attached. "Coordinator Only" restricts viewing of any per-game information to coordinators only.', true)),
+				'after' => $this->Html->para (null, __('Control spirit display. "All" shows numeric scores and survey answers (if applicable) to anyone. "Numeric" shows game scores but not survey answers. "Symbols Only" shows only star, check, and X, with no numeric values attached. "Coordinator Only" restricts viewing of any per-game information to coordinators only.', true)),
 			));
 
 			$tie_breaker_options = Configure::read('options.tie_breaker_spirit');
@@ -280,7 +280,7 @@ $collapse = !empty($this->data['Division']['id']);
 			echo $this->ZuluruForm->input('Division.email_after', array(
 				'size' => 5,
 				'default' => 0,
-				'after' => $this->Html->para (null, __('Email captains who haven\'t scored games after this many hours, no reminder if 0.', true)),
+				'after' => $this->Html->para (null, __('Email coaches/captains who haven\'t scored games after this many hours, no reminder if 0.', true)),
 			));
 			echo $this->ZuluruForm->input('Division.finalize_after', array(
 				'size' => 5,
@@ -293,7 +293,7 @@ $collapse = !empty($this->data['Division']['id']);
 					'options' => Configure::read('options.allstar'),
 					'empty' => '---',
 					'default' => 'never',
-					'after' => $this->Html->para (null, __('When to ask captains for allstar nominations.', true)),
+					'after' => $this->Html->para (null, __('When to ask coaches/captains for allstar nominations.', true)),
 				));
 				echo $this->ZuluruForm->input('Division.allstars_from', array(
 					'div' => 'input advanced',
@@ -309,7 +309,7 @@ $collapse = !empty($this->data['Division']['id']);
 					'options' => Configure::read('options.most_spirited'),
 					'empty' => '---',
 					'default' => 'never',
-					'after' => $this->Html->para (null, __('When to ask captains for "most spirited player" nominations.', true)),
+					'after' => $this->Html->para (null, __('When to ask coaches/captains for "most spirited player" nominations.', true)),
 				));
 			}
 		}
@@ -324,7 +324,7 @@ $collapse = !empty($this->data['Division']['id']);
 			echo $this->ZuluruForm->input('stat_tracking', array(
 				'options' => Configure::read('options.stat_tracking'),
 				'empty' => '---',
-				'after' => $this->Html->para (null, __('When to ask captains for game stats.', true)),
+				'after' => $this->Html->para (null, __('When to ask coaches/captains for game stats.', true)),
 			));
 	?>
 		<div id="StatDetails">

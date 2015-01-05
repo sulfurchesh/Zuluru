@@ -13,7 +13,7 @@ echo ' (' . $this->Html->link($address, "http://maps.google.com/maps?q=$link_add
 ?> on <?php
 echo $this->ZuluruTime->date($event['TeamEvent']['date']);
 ?>.</p>
-<?php if (isset($comment)): ?>
+<?php if (!empty($comment)): ?>
 <p><?php echo $comment; ?></p>
 <?php endif; ?>
 <?php if ($status == ATTENDANCE_AVAILABLE): ?>
@@ -29,6 +29,4 @@ echo $this->Html->link($url, $url);
 ?></p>
 <p>Either of these actions will generate an automatic email to <?php echo $person['first_name']; ?> indicating your selection. If you are unsure whether you will want <?php echo $person['first_name']; ?> to attend this event, it's best to leave <?php echo ($person['gender'] == 'Male' ? 'him' : 'her'); ?> listed as available, and take action later when you know for sure. You can always update <?php echo ($person['gender'] == 'Male' ? 'his' : 'her'); ?> status on the web site, there is no need to keep this email for that purpose.</p>
 <?php endif; ?>
-<p>Thanks,
-<br /><?php echo Configure::read('email.admin_name'); ?>
-<br /><?php echo Configure::read('organization.short_name'); ?> web team</p>
+<?php echo $this->element('email/html/footer'); ?>

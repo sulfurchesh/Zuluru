@@ -1498,7 +1498,7 @@ class TeamsController extends AppController {
 		$this->set('is_coordinator', in_array($team['Team']['division_id'], $this->UserCache->read('DivisionIDs')));
 		$this->set('is_captain', in_array($id, $this->UserCache->read('AllOwnedTeamIDs')));
 		$this->set('spirit_obj', $this->_getComponent ('Spirit', $team['Division']['League']['sotg_questions'], $this));
-		$this->set('display_attendance', $team['Team']['track_attendance'] && in_array($team['Team']['id'], $this->UserCache->read('AllTeamIDs')));
+		$this->set('display_attendance', $team['Team']['track_attendance'] && (in_array($team['Team']['id'], $this->UserCache->read('AllTeamIDs')) || in_array($team['Team']['id'], $this->UserCache->read('AllRelativeTeamIDs'))));
 		$this->set('annotate', Configure::read('feature.annotations') && in_array($team['Team']['id'], $this->UserCache->read('TeamIDs')));
 		$this->_addTeamMenuItems ($this->Team->data);
 	}
@@ -1700,7 +1700,7 @@ class TeamsController extends AppController {
 		$this->Team->contain(array (
 			'Person' => array(
 				'fields' => array(
-					'Person.first_name', 'Person.last_name',
+					'Person.id', 'Person.user_id', 'Person.first_name', 'Person.last_name', 'Person.alternate_email',
 				),
 				'order' => array(
 					'TeamsPerson.role', 'Person.gender DESC', 'Person.last_name', 'Person.first_name',
@@ -2060,7 +2060,7 @@ class TeamsController extends AppController {
 				$count += count(Set::extract ("/Person/TeamsPerson[role=$captain_role][status=" . ROSTER_APPROVED . ']', $team));
 			}
 			if ($count == 1) {
-				$this->Session->setFlash(__('All teams must have at least one player as captain.', true), 'default', array('class' => 'info'));
+				$this->Session->setFlash(__('All teams must have at least one player as coach or captain.', true), 'default', array('class' => 'info'));
 				if ($this->RequestHandler->isAjax()) {
 					return;
 				}
@@ -2244,6 +2244,7 @@ class TeamsController extends AppController {
 				$this->redirect('/');
 			}
 		}
+		$is_me = ($person_id == $my_id || in_array($person_id, $this->UserCache->read('RelativeIDs')));
 
 		list ($team, $person) = $this->_initTeamForRosterChange($person_id);
 		$team_id = $team['Team']['id'];
@@ -2272,7 +2273,7 @@ class TeamsController extends AppController {
 			// Check for coordinator or admin override
 			if (!$this->effective_admin && !$this->effective_coordinator &&
 				// Players can accept when they are invited
-				!($person['Person']['TeamsPerson']['status'] == ROSTER_INVITED && $person_id == $this->UserCache->currentId()) &&
+				!($person['Person']['TeamsPerson']['status'] == ROSTER_INVITED && $is_me) &&
 				// Captains can accept requests to join their teams
 				!($person['Person']['TeamsPerson']['status'] == ROSTER_REQUESTED && in_array ($team_id, $this->UserCache->read('OwnedTeamIDs')))
 			)
@@ -2325,6 +2326,7 @@ class TeamsController extends AppController {
 				$this->redirect('/');
 			}
 		}
+		$is_me = ($person_id == $my_id || in_array($person_id, $this->UserCache->read('RelativeIDs')));
 
 		list ($team, $person) = $this->_initTeamForRosterChange($person_id);
 		$team_id = $team['Team']['id'];
@@ -2354,8 +2356,7 @@ class TeamsController extends AppController {
 			if (!$this->effective_admin && !$this->effective_coordinator &&
 				// Players or captains can either decline an invite or request from the other,
 				// or remove one that they made themselves.
-				!($person_id == $this->UserCache->currentId()) &&
-				!(in_array ($team_id, $this->UserCache->read('OwnedTeamIDs')))
+				!$is_me && !(in_array ($team_id, $this->UserCache->read('OwnedTeamIDs')))
 			)
 			{
 				$this->Session->setFlash(sprintf (__('You are not allowed to decline this roster %s.', true),
@@ -2401,8 +2402,10 @@ class TeamsController extends AppController {
 				$this->Auth->authenticate->name,
 				'fields' => array(
 					'Person.id',
+					'Person.user_id',
 					'Person.first_name',
 					'Person.last_name',
+					'Person.alternate_email',
 					'Person.gender',
 					'Person.status',
 					'Person.complete',
@@ -2459,8 +2462,8 @@ class TeamsController extends AppController {
 		// TODO: Eliminate hard-coded group_ids
 		$groups = $this->UserCache->read('GroupIDs', $person_id);
 		if (!in_array(2, $groups)) {
-			foreach (Configure::read('extended_playing_roster_roles') as $role) {
-				unset($roster_role_options[$role]);
+			foreach (Configure::read('extended_playing_roster_roles') as $playing_role) {
+				unset($roster_role_options[$playing_role]);
 			}
 		}
 
@@ -2471,11 +2474,7 @@ class TeamsController extends AppController {
 			return $roster_role_options;
 		}
 
-		// Non-captains are not allowed to promote themselves to captainly roles
-		foreach (Configure::read('privileged_roster_roles') as $cap) {
-			unset ($roster_role_options[$cap]);
-		}
-
+		// Special handling of a couple of current roles
 		switch ($role) {
 			case 'substitute':
 				// Subs can't make themselves regular players
@@ -2487,6 +2486,16 @@ class TeamsController extends AppController {
 					$this->Session->setFlash(__('Sorry, this team is not open for new players to join.', true), 'default', array('class' => 'info'));
 					$this->redirect(array('action' => 'view', 'team' => $team['Team']['id']));
 				}
+				// The "none" role means they're not on the team, so either they are being added
+				// by a captain or admin, or they are requesting to join and need to be confirmed
+				// before they will have any permissions. Either way, captainly roles should be
+				// an option.
+				return $roster_role_options;
+		}
+
+		// Non-captains are not allowed to promote themselves to captainly roles
+		foreach (Configure::read('privileged_roster_roles') as $captain_role) {
+			unset ($roster_role_options[$captain_role]);
 		}
 
 		// Whatever is left is okay
@@ -2665,7 +2674,7 @@ class TeamsController extends AppController {
 			}
 		}
 
-		if ($role !== null && $status != ROSTER_INVITED) {
+		if ($role !== null && $status != ROSTER_INVITED && $status != ROSTER_REQUESTED) {
 			$roster_role_options = $this->_rosterRoleOptions (null, $team, $person['Person']['id']);
 			if (!array_key_exists ($role, $roster_role_options)) {
 				return __('You are not allowed to invite someone to that role.', true);
@@ -2750,7 +2759,7 @@ class TeamsController extends AppController {
 				'sendAs' => 'both',
 		)))
 		{
-			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+			$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 			return false;
 		}
 
@@ -2772,14 +2781,14 @@ class TeamsController extends AppController {
 					'sendAs' => 'both',
 			)))
 			{
-				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team ccoaches/aptains.', true)), 'default', array('class' => 'error'), 'email');
 				return false;
 			}
 		} else {
 			// A captain has accepted a request
 			$captain = $this->UserCache->read('Person.full_name');
 			if (empty($captain)) {
-				$captain = 'A captain';
+				$captain = 'A coach or captain';
 			}
 			$this->set (compact('captain'));
 
@@ -2802,7 +2811,7 @@ class TeamsController extends AppController {
 		$this->_initRosterEmail($person, $team, $role);
 
 		if ($status == ROSTER_INVITED) {
-			$is_player = ($this->_arg('code') !== null || $person['Person']['id'] == $this->UserCache->currentId());
+			$is_player = ($this->_arg('code') !== null || $person['Person']['id'] == $this->UserCache->currentId() || in_array($person['Person']['id'], $this->UserCache->read('RelativeIDs')));
 			$is_captain = in_array($team['Team']['id'], $this->UserCache->read('OwnedTeamIDs'));
 
 			if ($is_player || $this->effective_admin || $this->effective_coordinator) {
@@ -2817,7 +2826,7 @@ class TeamsController extends AppController {
 						'sendAs' => 'both',
 				)))
 				{
-					$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+					$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 					return false;
 				}
 			}
@@ -2843,7 +2852,7 @@ class TeamsController extends AppController {
 			// A captain has declined a request
 			$captain = $this->UserCache->read('Person.full_name');
 			if (empty($captain)) {
-				$captain = 'A captain';
+				$captain = 'A coach or captain';
 			}
 			$this->set (compact('captain'));
 
@@ -2873,8 +2882,10 @@ class TeamsController extends AppController {
 			'old_role' => $person['Person']['TeamsPerson']['role'],
 		));
 
-		if ($person['Person']['id'] == $this->UserCache->currentId()) {
-			// A player has changed themselves
+		if ($person['Person']['id'] == $this->UserCache->currentId() ||
+			(in_array($person['Person']['id'], $this->UserCache->read('RelativeIDs')) && !in_array($team['Team']['id'], $this->UserCache->read('OwnedTeamIDs'))))
+		{
+			// A player has changed themselves, or a relative who is not a captain of the team did it for them
 			$captains = $this->_initRosterCaptains ($team);
 
 			if (!$this->_sendMail (array (
@@ -2885,7 +2896,7 @@ class TeamsController extends AppController {
 					'sendAs' => 'both',
 			)))
 			{
-				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 				return false;
 			}
 		} else {
@@ -2929,7 +2940,7 @@ class TeamsController extends AppController {
 					'sendAs' => 'both',
 			)))
 			{
-				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team captains.', true)), 'default', array('class' => 'error'), 'email');
+				$this->Session->setFlash(sprintf (__('Error sending email to %s.', true), __('team coaches/captains.', true)), 'default', array('class' => 'error'), 'email');
 				return false;
 			}
 		} else {
@@ -2977,8 +2988,9 @@ class TeamsController extends AppController {
 				'conditions' => array(
 					'TeamsPerson.role' => Configure::read('privileged_roster_roles'),
 					'TeamsPerson.status' => ROSTER_APPROVED,
+					'TeamsPerson.person_id !=' => $this->UserCache->currentId(),
 				),
-				'fields' => array('Person.id', 'Person.first_name', 'Person.last_name'),
+				'fields' => array('Person.id', 'Person.user_id', 'Person.first_name', 'Person.last_name', 'Person.alternate_email'),
 			),
 		));
 		$captains = $this->Team->read (null, $team['Team']['id']);
@@ -3043,7 +3055,7 @@ class TeamsController extends AppController {
 					'contain' => array(
 						'Person' => array(
 							$this->Auth->authenticate->name,
-							'fields' => array('Person.id', 'Person.first_name', 'Person.last_name'),
+							'fields' => array('Person.id', 'Person.user_id', 'Person.first_name', 'Person.last_name', 'Person.alternate_email'),
 						),
 					),
 			));

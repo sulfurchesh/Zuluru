@@ -369,6 +369,14 @@ class Person extends AppModel {
 			'associationForeignKey' => 'relative_id',
 			'unique' => false,
 		),
+		'Related' => array(
+			'className' => 'Person',
+			'joinTable' => 'people_people',
+			'with' => 'PeoplePerson',
+			'foreignKey' => 'relative_id',
+			'associationForeignKey' => 'person_id',
+			'unique' => false,
+		),
 		'Team' => array(
 			'className' => 'Team',
 			'joinTable' => 'teams_people',
@@ -525,6 +533,13 @@ class Person extends AppModel {
 					$record[$this->alias]['email_formatted'] = $record[$this->alias]['email'];
 				}
 			}
+			if (!empty($record[$this->alias]['alternate_email'])) {
+				if (!empty ($record[$this->alias]['full_name'])) {
+					$record[$this->alias]['alternate_email_formatted'] = "\"{$record[$this->alias]['full_name']} (alternate)\" <{$record[$this->alias]['alternate_email']}>";
+				} else {
+					$record[$this->alias]['alternate_email_formatted'] = $record[$this->alias]['alternate_email'];
+				}
+			}
 		}
 
 		if (array_key_exists ('alternate_first_name', $record[$this->alias]) && array_key_exists ('alternate_last_name', $record[$this->alias])) {
@@ -616,7 +631,11 @@ class Person extends AppModel {
 			);
 		}
 		if (Configure::read('profile.addr_street')) {
-			$conditions['OR']['Person.addr_street'] = $person['Person']['addr_street'];
+			$conditions['OR'][] = array(
+				'Person.addr_street' => $person['Person']['addr_street'],
+				'Person.addr_street !=' => '',
+				array('Person.addr_street !=' => null),
+			);
 		}
 
 		$config = new DATABASE_CONFIG;

@@ -208,7 +208,7 @@ class TeamEventsController extends AppController {
 				'Person' => array(
 					$this->Auth->authenticate->name,
 					'conditions' => array('TeamsPerson.role' => Configure::read('privileged_roster_roles')),
-					'fields' => array('Person.id', 'Person.first_name', 'Person.last_name'),
+					'fields' => array('Person.id', 'Person.user_id', 'Person.first_name', 'Person.last_name', 'Person.alternate_email'),
 				),
 				'Division' => 'League',
 			),
@@ -248,7 +248,12 @@ class TeamEventsController extends AppController {
 			$this->redirect('/');
 		}
 
-		$is_me = ($person_id == $this->UserCache->currentId());
+		if (empty($person['Team'])) {
+			$this->Session->setFlash(__('That person is not on this team.', true), 'default', array('class' => 'info'));
+			$this->redirect('/');
+		}
+
+		$is_me = ($person_id == $this->UserCache->currentId() || in_array($person_id, $this->UserCache->read('RelativeIDs')));
 		$is_captain = in_array ($team['id'], $this->UserCache->read('OwnedTeamIDs'));
 
 		// We must do other permission checks here, because we allow non-logged-in users to accept
@@ -362,10 +367,6 @@ class TeamEventsController extends AppController {
 				// Make sure the current player isn't in the list of captains to send to
 				$captains = Set::extract ("/Person[id!={$person['id']}]", $team);
 				if (!empty ($captains)) {
-					if (array_key_exists('comment', $this->data['Person']) && !empty($this->data['Person']['comment'])) {
-						$this->set('comment', $this->data['Person']['comment']);
-					}
-
 					$this->set('captains', implode (', ', Set::extract ('/Person/first_name', $captains)));
 					$this->set('code', $this->_hash(array_merge ($attendance, array('captain' => true))));
 					$this->_sendMail (array (
@@ -383,7 +384,7 @@ class TeamEventsController extends AppController {
 			else if ($is_captain && !in_array($role, Configure::read('playing_roster_roles'))) {
 				$captain = $this->UserCache->read('Person.full_name');
 				if (!$captain) {
-					$captain = __('A captain', true);
+					$captain = __('A coach or captain', true);
 				}
 				$this->set(compact('captain'));
 				$this->set('player_options',

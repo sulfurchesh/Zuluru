@@ -11,7 +11,7 @@ echo $this->Html->link($this->ZuluruTime->time($game['GameSlot']['game_start']),
 ?> on <?php
 echo $this->ZuluruTime->date($game['GameSlot']['game_date']);
 ?> in <?php echo $division['full_league_name']; ?>.</p>
-<p>Scores need to be submitted in a timely fashion by both captains to substantiate results and for optimal scheduling of future games. We ask you to please submit the score as soon as possible. You can submit the score for this game <?php
+<p>Scores need to be submitted in a timely fashion by both teams to substantiate results and for optimal scheduling of future games. We ask you to please submit the score as soon as possible. You can submit the score for this game <?php
 $url = Router::url(array('controller' => 'games', 'action' => 'submit_score', 'game' => $game['Game']['id'], 'team' => $team['id']), true);
 echo $this->Html->link('here', $url);
 ?>.</p>
@@ -26,6 +26,4 @@ if ($division['finalize_after'] > 48) {
 if (Configure::read('scoring.missing_score_spirit_penalty') > 0): ?>
  and a loss of <?php echo Configure::read('scoring.missing_score_spirit_penalty'); ?> Spirit points<?php endif; ?>.</p>
 <?php endif; ?>
-<p>Thanks,
-<br /><?php echo Configure::read('email.admin_name'); ?>
-<br /><?php echo Configure::read('organization.short_name'); ?> web team</p>
+<?php echo $this->element('email/html/footer'); ?>

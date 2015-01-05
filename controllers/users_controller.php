@@ -106,6 +106,13 @@ class UsersController extends AppController {
 			// Set the default error message in advance. If it saves successfully, this will be overwritten.
 			$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('account', true)), 'default', array('class' => 'warning'));
 
+			// The presence of data in a field that should not be filled in triggers anti-spam measures.
+			// Also, anyone that fills the form out in under 15 seconds is a spambot.
+			if (Configure::read('feature.antispam') && (!empty($this->data[$user_model]['subject']) || time() - $this->data[$user_model]['timestamp'] < 15)) {
+				sleep(15);
+				return;
+			}
+
 			// Handle affiliations
 			if (Configure::read('feature.affiliates')) {
 				if (Configure::read('feature.multiple_affiliates')) {
@@ -198,7 +205,8 @@ class UsersController extends AppController {
 					} else {
 						$msg = __('Your account has been created.', true);
 						if (!$approved) {
-							$msg .= ' ' . __('It must be approved by an administrator before you will have full access to the site. However, you can log in and start exploring right away.', true);
+							$msg .= ' ' . __('It must be approved by an administrator before you will have full access to the site.', true);
+							$msg .= ' ' . __('However, you can log in and start exploring right away.', true);
 						}
 						$this->Session->setFlash($msg, 'default', array('class' => 'success'));
 					}
@@ -221,6 +229,9 @@ class UsersController extends AppController {
 						$this->Auth->login($this->Auth->hashPasswords($this->data));
 					}
 
+					if (isset($this->params['form']['continue'])) {
+						$this->redirect(array('controller' => 'people', 'action' => 'add_relative'));
+					}
 					$this->redirect('/');
 				}
 			}
@@ -369,6 +380,7 @@ class UsersController extends AppController {
 							$names[] = $data['Person']['last_name'];
 						}
 						$data['Person']['full_name'] = implode(' ', $names);
+						$data['Person']['email'] = $data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField];
 						$data['Person']['email_formatted'] = "{$data['Person']['full_name']} <{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]}>";
 						if (!empty($this->Auth->authenticate->nameField) && empty($data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField])) {
 							$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField] = $data['Person']['full_name'];
@@ -601,7 +613,7 @@ class UsersController extends AppController {
 		$this->set ($user);
 		$this->set ('code', str_replace('/', '_', substr($user['password'], -8)));
 		return $this->_sendMail (array (
-				'to' => $user['email_formatted'],
+				'to' => $user,
 				'subject' => 'Password reset code',
 				'template' => 'password_reset',
 				'sendAs' => 'both',
@@ -621,7 +633,7 @@ class UsersController extends AppController {
 			$this->set ($user);
 			$this->set (compact('password'));
 			return $this->_sendMail (array (
-					'to' => $user['email_formatted'],
+					'to' => $user,
 					'subject' => 'New password',
 					'template' => 'password_new',
 					'sendAs' => 'both',
