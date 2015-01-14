@@ -127,7 +127,7 @@ class DivisionsController extends AppController {
 		$this->Division->contain(array (
 			'Person',
 			'Day' => array('order' => 'day_id'),
-			'Team' => array ('Person', 'Franchise'),
+			'Team' => array ('Person' => 'Skill', 'Franchise'),
 			'League',
 			'Event' => array('EventType', 'Price'),
 		));
@@ -519,8 +519,7 @@ class DivisionsController extends AppController {
 		unset ($params['person']);
 
 		$this->_handlePersonSearch($params, $url, $this->Division->Person,
-			// TODO: Eliminate hard-coded group_ids
-			array('group_id' => array(4,5,6,7)));
+			array('group_id' => array(GROUP_VOLUNTEER,GROUP_OFFICIAL,GROUP_MANAGER,GROUP_ADMIN)));
 	}
 
 	function remove_coordinator() {
@@ -625,7 +624,7 @@ class DivisionsController extends AppController {
 		$this->Division->contain(array (
 			'Day' => array('order' => 'day_id'),
 			'Team' => array(
-				'Person',
+				'Person' => 'Skill',
 				'order' => array('rating' => 'DESC'),
 			),
 			'League',
@@ -672,7 +671,7 @@ class DivisionsController extends AppController {
 		$this->Division->contain(array (
 			'Day' => array('order' => 'day_id'),
 			'Team' => array(
-				'Person',
+				'Person' => 'Skill',
 				'order' => array('initial_seed'),
 			),
 			'League',

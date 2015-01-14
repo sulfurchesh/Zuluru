@@ -131,6 +131,11 @@ class UsersController extends AppController {
 			// SaveAll doesn't work correctly in this case. Save them separately, to make sure they're all validated.
 			$this->Auth->authenticate->saveAll($this->data[$user_model], array('validate' => 'only'));
 			$this->Person->saveAll($this->data['Person'], array('validate' => 'only'));
+			foreach ($this->data['Person'] as $key => $person) {
+				if (!empty($this->data['Person'][$key]['Skill']) && !$this->Person->Skill->saveAll($this->data['Person'][$key]['Skill'], array('validate' => 'only'))) {
+					$this->Person->validationErrors[$key]['Skill'] = $this->Person->Skill->validationErrors;
+				}
+			}
 
 			// Make sure someone isn't forging their way into an entirely unauthorized level.
 			if (!$this->is_admin && !empty($this->data['Group']['Group'])) {
@@ -179,11 +184,18 @@ class UsersController extends AppController {
 						}
 
 						$save = array('Person' => $person, 'Affiliate' => $this->data['Affiliate']);
+						if (!empty($person['Skill'])) {
+							$save['Skill'] = $person['Skill'];
+							unset($person['Skill']);
+						}
 						if ($key == 0) {
 							$save['Group'] = $this->data['Group'];
 						} else {
-							// Assume any secondary profiles are players, with group_id = 2
-							$save['Group'] = array('Group' => array(2));
+							// Assume any secondary profiles are players
+							$save['Group'] = array('Group' => array(GROUP_PLAYER));
+							if (isset($this->data['Person'][0]['status'])) {
+								$save['Person']['status'] = $this->data['Person'][0]['status'];
+							}
 						}
 
 						$this->Person->create();
@@ -200,16 +212,21 @@ class UsersController extends AppController {
 						}
 					}
 
+					App::import('Helper', 'Html');
+					$html = new HtmlHelper();
 					if (Configure::read('feature.auto_approve')) {
-						$this->Session->setFlash('<h2>' . __('THANK YOU', true) . '</h2><p>' . sprintf(__('for creating an account with %s.', true), Configure::read('organization.name')) . '</p>', 'default', array('class' => 'success'));
+						$msg = $html->tag('h2', __('THANK YOU', true)) .
+								$html->para(null, sprintf(__('for creating an account with %s.', true), Configure::read('organization.name')));
 					} else {
-						$msg = __('Your account has been created.', true);
-						if (!$approved) {
-							$msg .= ' ' . __('It must be approved by an administrator before you will have full access to the site.', true);
-							$msg .= ' ' . __('However, you can log in and start exploring right away.', true);
-						}
-						$this->Session->setFlash($msg, 'default', array('class' => 'success'));
+						$msg = $html->para(null,
+								__('Your account has been created.', true) . ' ' .
+								__('It must be approved by an administrator before you will have full access to the site.', true) . ' ' .
+								__('However, you can log in and start exploring right away.', true));
 					}
+					if (isset($this->params['form']['continue'])) {
+						$msg .= $html->para(null, __('Please proceed with entering your next child\'s details below.', true));
+					}
+					$this->Session->setFlash($msg, 'default', array('class' => 'success'));
 
 					// There may be callbacks to handle
 					// TODO: How to handle this in conjunction with third-party auth systems?
@@ -239,16 +256,24 @@ class UsersController extends AppController {
 	}
 
 	function import() {
+		$this->_loadGroupOptions();
 		$columns = $this->Person->_schema;
 		foreach (array('id', 'user_id', 'user_name', 'email', 'complete', 'twitter_token', 'twitter_secret') as $no_import) {
 			unset($columns[$no_import]);
 		}
 		foreach (array_keys($columns) as $column) {
-			if (!Configure::read("profile.$column")) {
+			// Deal with special cases
+			$short_column = str_replace('alternate_', '', $column);
+			if ($short_column == 'work_ext') {
+				$include = Configure::read('profile.work_phone');
+			} else {
+				$include = Configure::read("profile.$short_column");
+			}
+			if (!$include) {
 				unset($columns[$column]);
 			}
 		}
-		$columns['password'] = true;
+		$columns['password'] = $columns['alternate_email'] = true;
 		$this->set('columns', array_keys($columns));
 
 		// Add other columns that we'll accept but are mentioned separately in the view
@@ -310,6 +335,7 @@ class UsersController extends AppController {
 					$unmap = array_flip($remap);
 
 					$succeeded = $resolved = $failed = array();
+					$parent_id = null;
 
 					while (($row = fgetcsv($file)) !== false) {
 						// Skip rows starting with a #
@@ -322,8 +348,6 @@ class UsersController extends AppController {
 						$data = array(
 							'Person' => array(),
 							$this->Auth->authenticate->alias => array(),
-							// TODO: Hardcoded group_id
-							'Group' => array('Group' => array(2)),
 							'Affiliate' => $this->data['Affiliate'],
 						);
 						foreach ($header as $key => $column) {
@@ -380,10 +404,21 @@ class UsersController extends AppController {
 							$names[] = $data['Person']['last_name'];
 						}
 						$data['Person']['full_name'] = implode(' ', $names);
-						$data['Person']['email'] = $data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField];
-						$data['Person']['email_formatted'] = "{$data['Person']['full_name']} <{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]}>";
-						if (!empty($this->Auth->authenticate->nameField) && empty($data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField])) {
-							$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField] = $data['Person']['full_name'];
+
+						// Special handling of child accounts
+						if (low($data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]) == 'child') {
+							$is_child = true;
+							$data['Group'] = array('Group' => array(GROUP_PLAYER));
+							unset($data[$this->Auth->authenticate->alias]);
+							$data['Related'] = array(array('person_id' => $parent_id, 'approved' => true));
+						} else {
+							$is_child = false;
+							$data['Group'] = $this->data['Group'];
+							$data['Person']['email'] = $data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField];
+							$data['Person']['email_formatted'] = "{$data['Person']['full_name']} <{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]}>";
+							if (!empty($this->Auth->authenticate->nameField) && empty($data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField])) {
+								$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->nameField] = $data['Person']['full_name'];
+							}
 						}
 						if (empty($data['Person']['status'])) {
 							$data['Person']['status'] = $this->data['Person']['status'];
@@ -402,6 +437,7 @@ class UsersController extends AppController {
 						}
 
 						if ($continue && !$this->data['Person']['trial_run']) {
+							$this->Person->create();
 							if ($success) {
 								$success = $this->Person->saveAll($data);
 							} else {
@@ -428,14 +464,22 @@ class UsersController extends AppController {
 							}
 						}
 
+						if ($is_child) {
+							$desc = "&nbsp;&nbsp;+ {$data['Person']['full_name']} as a child";
+						} else {
+							$desc = "{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->userField]} ({$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]})";
+						}
+
 						if ($continue && $success) {
-							if (empty($errors)) {
-								$succeeded[] = "{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->userField]} ({$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]})";
-							} else {
-								$resolved[] = "{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->userField]} ({$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]})" .
-										': ' . implode(', ', $errors);
+							if (!$is_child) {
+								$parent_id = $this->Auth->authenticate->id;
 							}
-							if (!$this->data['Person']['trial_run'] && $this->data['Person']['notify_new_users']) {
+							if (empty($errors)) {
+								$succeeded[] = $desc;
+							} else {
+								$resolved[] = $desc . ': ' . implode(', ', $errors);
+							}
+							if (!$this->data['Person']['trial_run'] && $this->data['Person']['notify_new_users'] && !$is_child) {
 								$this->set (array(
 										'user' => $data,
 										'user_model' => $this->Auth->authenticate->alias,
@@ -458,11 +502,9 @@ class UsersController extends AppController {
 							}
 
 							if ($continue) {
-								$resolved[] = "{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->userField]} ({$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]})" .
-										': ' . implode(', ', $errors);
+								$resolved[] = $desc . ': ' . implode(', ', $errors);
 							} else {
-								$failed[] = "{$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->userField]} ({$data[$this->Auth->authenticate->alias][$this->Auth->authenticate->emailField]})" .
-										': ' . implode(', ', $errors);
+								$failed[] = $desc . ': ' . implode(', ', $errors);
 							}
 						}
 					}

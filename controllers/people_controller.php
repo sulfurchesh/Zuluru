@@ -62,8 +62,7 @@ class PeopleController extends AppController {
 				'add_relative',
 		)))
 		{
-			// TODO: Eliminate hard-coded group_id
-			if (in_array(1, $this->UserCache->read('GroupIDs'))) {
+			if (in_array(GROUP_PARENT, $this->UserCache->read('GroupIDs'))) {
 				return true;
 			}
 		}
@@ -236,8 +235,7 @@ class PeopleController extends AppController {
 				'recursive' => -1,
 		));
 
-		// Following queries all look only at players
-		// TODO: Eliminate hard-coded group_ids
+		// Following queries all look only at players, and group by sport
 		$joins[] = array(
 			'table' => "{$this->Person->tablePrefix}groups_people",
 			'alias' => 'GroupPerson',
@@ -245,21 +243,30 @@ class PeopleController extends AppController {
 			'foreignKey' => false,
 			'conditions' => 'GroupPerson.person_id = Person.id',
 		);
+		$joins[] = array(
+			'table' => "{$this->Person->tablePrefix}skills",
+			'alias' => 'Skill',
+			'type' => 'LEFT',
+			'foreignKey' => false,
+			'conditions' => 'Person.id = Skill.person_id',
+		);
 
 		// Get the list of players by gender
 		$gender_count = $this->Person->find('all', array(
 				'fields' => array(
 					'Affiliate.*',
+					'Skill.sport',
 					'Person.gender',
 					'COUNT(Person.id) AS count',
 				),
 				'conditions' => array(
 					'AffiliatePerson.affiliate_id' => $affiliates,
-					'GroupPerson.group_id' => 2,
+					'GroupPerson.group_id' => GROUP_PLAYER,
+					'Skill.enabled' => true,
 				),
 				'joins' => $joins,
-				'group' => array('AffiliatePerson.affiliate_id', 'Person.gender'),
-				'order' => array('Affiliate.name', 'Person.gender' => 'DESC'),
+				'group' => array('AffiliatePerson.affiliate_id', 'Skill.sport', 'Person.gender'),
+				'order' => array('Affiliate.name', 'Skill.sport', 'Person.gender' => 'DESC'),
 				'recursive' => -1,
 		));
 
@@ -268,56 +275,62 @@ class PeopleController extends AppController {
 			$age_count = $this->Person->find('all', array(
 					'fields' => array(
 						'Affiliate.*',
+						'Skill.sport',
 						'FLOOR((YEAR(NOW()) - YEAR(birthdate)) / 5) * 5 AS age_bucket',
 						'COUNT(Person.id) AS count',
 					),
 					'conditions' => array(
 						'AffiliatePerson.affiliate_id' => $affiliates,
-						'GroupPerson.group_id' => 2,
+						'GroupPerson.group_id' => GROUP_PLAYER,
+						'Skill.enabled' => true,
 						array('birthdate !=' => null),
 						array('birthdate !=' => '0000-00-00'),
 					),
 					'joins' => $joins,
-					'group' => array('AffiliatePerson.affiliate_id', 'age_bucket'),
-					'order' => array('Affiliate.name', 'age_bucket'),
+					'group' => array('AffiliatePerson.affiliate_id', 'Skill.sport', 'age_bucket'),
+					'order' => array('Affiliate.name', 'Skill.sport', 'age_bucket'),
 					'recursive' => -1,
 			));
 		}
 
-		// Get the list of players by year started
+		// Get the list of players by year started for each sport
 		if (Configure::read('profile.year_started')) {
 			$started_count = $this->Person->find('all', array(
 					'fields' => array(
 						'Affiliate.*',
-						'Person.year_started',
+						'Skill.sport',
+						'Skill.year_started',
 						'COUNT(Person.id) AS count',
 					),
 					'conditions' => array(
 						'AffiliatePerson.affiliate_id' => $affiliates,
-						'GroupPerson.group_id' => 2,
+						'GroupPerson.group_id' => GROUP_PLAYER,
+						'Skill.enabled' => true,
 					),
 					'joins' => $joins,
-					'group' => array('AffiliatePerson.affiliate_id', 'year_started'),
-					'order' => array('Affiliate.name', 'year_started'),
+					'group' => array('AffiliatePerson.affiliate_id', 'Skill.sport', 'Skill.year_started'),
+					'order' => array('Affiliate.name', 'Skill.sport', 'Skill.year_started'),
 					'recursive' => -1,
 			));
 		}
 
-		// Get the list of players by skill level
+		// Get the list of players by skill level for each sport
 		if (Configure::read('profile.skill_level')) {
 			$skill_count = $this->Person->find('all', array(
 					'fields' => array(
 						'Affiliate.*',
-						'Person.skill_level',
+						'Skill.sport',
+						'Skill.skill_level',
 						'COUNT(Person.id) AS count',
 					),
 					'conditions' => array(
 						'AffiliatePerson.affiliate_id' => $affiliates,
-						'GroupPerson.group_id' => 2,
+						'GroupPerson.group_id' => GROUP_PLAYER,
+						'Skill.enabled' => true,
 					),
 					'joins' => $joins,
-					'group' => array('AffiliatePerson.affiliate_id', 'skill_level'),
-					'order' => array('Affiliate.name', 'skill_level' => 'DESC'),
+					'group' => array('AffiliatePerson.affiliate_id', 'Skill.sport', 'Skill.skill_level'),
+					'order' => array('Affiliate.name', 'Skill.sport', 'Skill.skill_level' => 'DESC'),
 					'recursive' => -1,
 			));
 		}
@@ -327,19 +340,24 @@ class PeopleController extends AppController {
 			$city_count = $this->Person->find('all', array(
 					'fields' => array(
 						'Affiliate.*',
+						'Skill.sport',
 						'Person.addr_city',
 						'COUNT(Person.id) AS count',
 					),
 					'conditions' => array(
 						'AffiliatePerson.affiliate_id' => $affiliates,
-						'GroupPerson.group_id' => 2,
+						'GroupPerson.group_id' => GROUP_PLAYER,
+						'Skill.enabled' => true,
 					),
 					'joins' => $joins,
-					'group' => array('AffiliatePerson.affiliate_id', 'addr_city HAVING count > 2'),
-					'order' => array('Affiliate.name', 'count' => 'DESC'),
+					'group' => array('AffiliatePerson.affiliate_id', 'Skill.sport', 'addr_city HAVING count > 2'),
+					'order' => array('Affiliate.name', 'Skill.sport', 'count' => 'DESC'),
 					'recursive' => -1,
 			));
 		}
+
+		// Done with skills table
+		array_pop($joins);
 
 		// Get the list of accounts by group
 		$joins[] = array(
@@ -629,6 +647,7 @@ class PeopleController extends AppController {
 		}
 
 		$groups = $this->UserCache->read('Groups', $person['id']);
+		$skills = Set::extract('/Skill[enabled=1]', $this->UserCache->read('Skills', $person['id']));
 		$teams = $this->UserCache->read('Teams', $person['id']);
 		$photo = null;
 
@@ -766,8 +785,10 @@ class PeopleController extends AppController {
 			}
 		}
 
-		$this->set(compact('person', 'groups', 'teams', 'relatives', 'related_to', 'divisions', 'waivers', 'registrations', 'preregistrations', 'credits', 'allstars', 'photo', 'documents', 'note', 'tasks', 'badges'));
+		$this->set(compact('person', 'groups', 'teams', 'skills', 'relatives', 'related_to', 'divisions', 'waivers', 'registrations', 'preregistrations', 'credits', 'allstars', 'photo', 'documents', 'note', 'tasks', 'badges'));
 		$this->set('is_me', ($id === $my_id));
+		$this->set('is_relative', in_array($id, $this->UserCache->read('RelativeIDs')));
+
 		$this->set($this->_connections($id));
 	}
 
@@ -882,9 +903,6 @@ class PeopleController extends AppController {
 		$this->_loadGroupOptions(true);
 		$this->_loadAffiliateOptions();
 
-		$sport = reset(array_keys(Configure::read('options.sport')));
-		Configure::load("sport/$sport");
-
 		if (!empty($this->data)) {
 			$this->data['Person']['complete'] = true;
 			$this->Person->create();
@@ -915,6 +933,17 @@ class PeopleController extends AppController {
 				}
 			}
 
+			// Handle IDs for skills
+			if (!empty($this->data['Skill'])) {
+				$skills = $this->UserCache->read('Skills', $id);
+				foreach ($this->data['Skill'] as $key => $skill) {
+					$skill_id = Set::extract("/Skill[sport={$skill['sport']}]/id", $skills);
+					if (!empty($skill_id)) {
+						$this->data['Skill'][$key]['id'] = $skill_id[0];
+					}
+				}
+			}
+
 			$this->Person->set($this->data);
 
 			// Make sure someone isn't forging their way into an entirely unauthorized level.
@@ -936,7 +965,7 @@ class PeopleController extends AppController {
 				}
 			}
 
-			if ($this->Person->validates() && $this->Person->Group->validates() && $this->Person->Affiliate->validates()) {
+			if ($this->Person->validates() && $this->Person->Skill->validates() && $this->Person->Group->validates() && $this->Person->Affiliate->validates()) {
 				if (!empty($this->data['Affiliate']['Affiliate'])) {
 					foreach ($this->data['Affiliate']['Affiliate'] as $key => $affiliate_id) {
 						if (in_array($affiliate_id, $this->UserCache->read('ManagedAffiliateIDs'))) {
@@ -964,6 +993,7 @@ class PeopleController extends AppController {
 
 					// Delete the cached data, so it's reloaded next time it's needed
 					$this->UserCache->clear('Person', $this->data['Person']['id']);
+					$this->UserCache->clear('Skills', $this->data['Person']['id']);
 					$this->UserCache->clear('Groups', $this->data['Person']['id']);
 					$this->UserCache->clear('GroupIDs', $this->data['Person']['id']);
 					$this->UserCache->clear('Affiliates', $this->data['Person']['id']);
@@ -978,7 +1008,7 @@ class PeopleController extends AppController {
 			}
 		}
 		if (empty($this->data)) {
-			$this->Person->contain(array('Affiliate', 'Group', $this->Auth->authenticate->name));
+			$this->Person->contain(array('Affiliate', 'Skill', 'Group', $this->Auth->authenticate->name));
 			$this->data = $this->Person->read(null, $id);
 			if (!$this->data) {
 				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -1150,8 +1180,8 @@ class PeopleController extends AppController {
 			}
 
 			// Tweak some data to be saved
-			// Assume any secondary profiles are players, with group_id = 2
-			$this->data['Group'] = array('Group' => array(2));
+			// Assume any secondary profiles are players
+			$this->data['Group'] = array('Group' => array(GROUP_PLAYER));
 			$this->data['Person']['complete'] = true;
 			if (Configure::read('feature.auto_approve')) {
 				$this->data['Person']['status'] = 'active';
@@ -2348,10 +2378,9 @@ class PeopleController extends AppController {
 	function act_as() {
 		$act_as = $this->_arg('person');
 		if ($act_as) {
-			// TODO: Eliminate hard-coded group_ids
-			if ($this->is_admin && in_array(7, $this->UserCache->read('GroupIDs', $act_as))) {
+			if ($this->is_admin && in_array(GROUP_ADMIN, $this->UserCache->read('GroupIDs', $act_as))) {
 				$this->Session->setFlash(__('Administrators cannot act as other administrators', true), 'default', array('class' => 'warning'));
-			} else if (!$this->is_admin && $this->is_manager && in_array(6, $this->UserCache->read('GroupIDs', $act_as))) {
+			} else if (!$this->is_admin && $this->is_manager && in_array(GROUP_MANAGER, $this->UserCache->read('GroupIDs', $act_as))) {
 				$this->Session->setFlash(__('Managers cannot act as other managers', true), 'default', array('class' => 'warning'));
 			} else if ($act_as == $this->UserCache->realId()) {
 				$this->Session->delete('Zuluru.act_as_id');
@@ -2493,8 +2522,7 @@ class PeopleController extends AppController {
 				if (array_key_exists('affiliate_id', $params)) {
 					$conditions[] = array('OR' => array(
 						"AffiliatePerson.affiliate_id" => $params['affiliate_id'],
-						// TODO: Eliminate hard-coded group_id
-						'group_id' => 7,
+						'group_id' => GROUP_ADMIN,
 					));
 				}
 
@@ -2624,7 +2652,7 @@ class PeopleController extends AppController {
 			$this->redirect(array('action' => 'list_new'));
 		}
 
-		$this->Person->contain('Affiliate', 'Group', Configure::read('security.auth_model'));
+		$this->Person->contain('Affiliate', 'Skill', 'Group', Configure::read('security.auth_model'));
 		$person = $this->Person->read(null, $id);
 		if (!$person) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
@@ -2662,13 +2690,12 @@ class PeopleController extends AppController {
 			unset($person[$this->Auth->authenticate->name]);
 		}
 
-		// TODO: Eliminate this hard-coded group_id
-		$this_is_player = Set::extract('/Group[id=2]', $person);
+		$this_is_player = Set::extract('/Group[id=' . GROUP_PLAYER . ']', $person);
 		if (empty($this_is_player)) {
 			$this->Person->beforeValidateNonPlayer();
 		}
 
-		// TODO: Some of these require updates/deletions in the settings table
+		// TODO: Some of these require updates/deletions in the settings and skills tables
 		switch($disposition) {
 			case 'approved':
 				$data = array(
@@ -2786,7 +2813,7 @@ class PeopleController extends AppController {
 				}
 
 				// Unset a few fields that we want to retain from the old record
-				foreach (array('status', 'user_id', 'year_started') as $field) {
+				foreach (array('status', 'user_id') as $field) {
 					if (!empty($existing['Person'][$field])) {
 						unset ($person['Person'][$field]);
 					}

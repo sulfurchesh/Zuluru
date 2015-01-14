@@ -6,7 +6,7 @@ $this->Html->addCrumb (__('Edit', true));
 
 $short = Configure::read('organization.short_name');
 $admin = Configure::read('email.admin_email');
-$this_is_player = (!empty($cached['Group']) && Set::extract('/GroupsPerson[group_id=2]', $cached['Group']));
+$this_is_player = (!empty($cached['Group']) && Set::extract('/GroupsPerson[group_id=' . GROUP_PLAYER . ']', $cached['Group']));
 $this_is_player = (!empty($this_is_player));
 
 $access = array(1);
@@ -16,9 +16,6 @@ $access = array(1);
 if ($is_admin || !$cached['complete']) {
 	$access[] = 2;
 }
-
-// TODO: Handle more than one sport in a site
-$sport = reset(array_keys(Configure::read('options.sport')));
 ?>
 
 <div class="people form">
@@ -430,46 +427,6 @@ echo $is_me ? __('Edit Your Profile', true) : (array_key_exists('first_name', $t
 				'after' => $this->Html->para (null, __('To prevent system abuses, this can only be changed by an administrator. To change this, please email your correct birthdate to ', true) . $this->Html->link ($admin, "mailto:$admin") . '.', true),
 			));
 		}
-		if (in_array (Configure::read('profile.year_started'), $access)) {
-			echo $this->ZuluruForm->input('year_started', array(
-				'type' => 'select',
-				'options' => $this->Form->__generateOptions('year', array(
-						'min' => Configure::read('options.year.started.min'),
-						'max' => Configure::read('options.year.started.max'),
-						'order' => 'desc'
-				)),
-				'empty' => '---',
-				'after' => $this->Html->para(null, 'The year you started playing in <strong>this</strong> league.'),
-			));
-		} else if (Configure::read('profile.year_started')) {
-			echo $this->ZuluruForm->input('year_started', array(
-				'value' => $cached['year_started'],
-				'disabled' => 'true',
-				'class' => 'disabled',
-				'after' => $this->Html->para (null, __('To prevent system abuses, this can only be changed by an administrator. To change this, please email your correct year started to ', true) . $this->Html->link ($admin, "mailto:$admin") . '.', true),
-			));
-		}
-		if (in_array (Configure::read('profile.skill_level'), $access)) {
-			if (Configure::read('sport.rating_questions')) {
-				$after = $this->Html->para(null, __('Please use the questionnaire to ', true) . $this->Html->link (__('calculate your rating', true), '#', array('onclick' => 'dorating("#PersonSkillLevel"); return false;')) . '.');
-			} else {
-				$after = null;
-			}
-			echo $this->ZuluruForm->input('skill_level', array(
-				'type' => 'select',
-				'empty' => '---',
-				'options' => Configure::read('options.skill'),
-				'after' => $after,
-			));
-		} else if (Configure::read('profile.skill_level')) {
-			echo $this->ZuluruForm->input('skill_level', array(
-				'value' => Configure::read("options.skill.{$cached['skill_level']}"),
-				'disabled' => 'true',
-				'class' => 'disabled',
-				'size' => 70,
-				'after' => $this->Html->para (null, __('To prevent system abuses, this can only be changed by an administrator. To change this, please email your new skill level to ', true) . $this->Html->link ($admin, "mailto:$admin") . '.', true),
-			));
-		}
 		if (in_array (Configure::read('profile.height'), $access)) {
 			if (Configure::read('feature.units') == 'Metric') {
 				$units = __('centimeters', true);
@@ -506,6 +463,7 @@ echo $is_me ? __('Edit Your Profile', true) : (array_key_exists('first_name', $t
 		if (Configure::read('feature.dog_questions')) {
 			echo $this->ZuluruForm->input('has_dog');
 		}
+		echo $this->element('people/skill_edit', compact('cached', 'access'));
 	?>
 	</fieldset>
 	<?php endif; ?>
@@ -513,37 +471,45 @@ echo $is_me ? __('Edit Your Profile', true) : (array_key_exists('first_name', $t
 </div>
 
 <?php
-if ($this_is_player && Configure::read('profile.skill_level') && Configure::read('sport.rating_questions')) {
-	echo $this->element('people/rating', array('sport' => $sport));
+if (Configure::read('profile.skill_level')) {
+	$sports = Configure::read('options.sport');
+	foreach (array_keys($sports) as $sport) {
+		Configure::load("sport/$sport");
+		if (Configure::read('sport.rating_questions')) {
+			echo $this->element('people/rating', array('sport' => $sport));
+		}
+	}
 }
 
 // Handle changes to parent and player checkboxes
+$player = GROUP_PLAYER;
+$parent = GROUP_PARENT;
 if ($cached['user_id']) {
-	$this->Js->get('#GroupGroup1')->event('change', 'parentChanged();');
-	$this->Js->get('#GroupGroup2')->event('change', 'playerChanged();');
-	echo $this->Html->scriptBlock('
-function parentChanged() {
-	var checked = jQuery("#GroupGroup1").prop("checked");
+	$this->Js->get("#GroupGroup$player")->event('change', 'playerChanged();');
+	$this->Js->get("#GroupGroup$parent")->event('change', 'parentChanged();');
+	echo $this->Html->scriptBlock("
+function playerChanged() {
+	var checked = jQuery('#GroupGroup$player').prop('checked');
 	if (checked) {
-		jQuery(".parent").css("display", "");
-		jQuery(".parent input, .parent select").not(".disabled").removeAttr("disabled");
+		jQuery('.player').css('display', '');
+		jQuery('.player input, .player select').not('.disabled').removeAttr('disabled');
 	} else {
-		jQuery(".parent").css("display", "none");
-		jQuery(".parent input, .parent select").attr("disabled", "disabled");
+		jQuery('.player').css('display', 'none');
+		jQuery('.player input, .player select').attr('disabled', 'disabled');
 	}
 }
 
-function playerChanged() {
-	var checked = jQuery("#GroupGroup2").prop("checked");
+function parentChanged() {
+	var checked = jQuery('#GroupGroup$parent').prop('checked');
 	if (checked) {
-		jQuery(".player").css("display", "");
-		jQuery(".player input, .player select").not(".disabled").removeAttr("disabled");
+		jQuery('.parent').css('display', '');
+		jQuery('.parent input, .parent select').not('.disabled').removeAttr('disabled');
 	} else {
-		jQuery(".player").css("display", "none");
-		jQuery(".player input, .player select").attr("disabled", "disabled");
+		jQuery('.parent').css('display', 'none');
+		jQuery('.parent input, .parent select').attr('disabled', 'disabled');
 	}
 }
-	');
+	");
 	$this->Js->buffer('parentChanged(); playerChanged();');
 }
 ?>

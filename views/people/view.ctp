@@ -8,16 +8,16 @@ $this->Html->addCrumb (__('View', true));
 <h2><?php
 echo $this->element('people/player_photo', array('person' => $person, 'photo' => $photo));
 echo $person['full_name'];
-$view_contact = $is_me || $is_admin || $is_manager || $is_coordinator || $is_captain || $is_my_captain || $is_my_coordinator || $is_division_captain;
+$view_contact = $is_me || $is_relative || $is_admin || $is_manager || $is_coordinator || $is_captain || $is_my_captain || $is_my_coordinator || $is_division_captain;
 $has_visible_contact = false;
 
-$this_is_parent = Set::extract('/GroupsPerson[group_id=1]', $groups);
-$this_is_parent = (!empty($this_is_parent));
-$this_is_player = Set::extract('/GroupsPerson[group_id=2]', $groups);
+$this_is_player = Set::extract('/GroupsPerson[group_id=' . GROUP_PLAYER . ']', $groups);
 $this_is_player = (!empty($this_is_player));
+$this_is_parent = Set::extract('/GroupsPerson[group_id=' . GROUP_PARENT . ']', $groups);
+$this_is_parent = (!empty($this_is_parent));
 ?></h2>
 	<dl><?php $i = 0; $class = ' class="altrow"';?>
-		<?php if ($is_me || $is_admin || $is_manager):?>
+		<?php if ($is_me || $is_relative || $is_admin || $is_manager):?>
 			<?php if ($person['user_id']):?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('User Name'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
@@ -143,7 +143,7 @@ $this_is_player = (!empty($this_is_player));
 			</dd>
 			<?php endif; ?>
 		<?php endif; ?>
-		<?php if ($is_me || $is_admin || $is_manager):?>
+		<?php if ($is_me || $is_relative || $is_admin || $is_manager):?>
 			<?php
 			$has_address = false;
 			$label = __('Address', true);
@@ -194,7 +194,7 @@ $this_is_player = (!empty($this_is_player));
 			?>
 		<?php endif; ?>
 		<?php if ($this_is_player): ?>
-			<?php if ($is_me || $is_admin || $is_manager):?>
+			<?php if ($is_me || $is_relative || $is_admin || $is_manager):?>
 				<?php if (Configure::read('profile.birthdate')): ?>
 				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Birthdate'); ?></dt>
 				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
@@ -218,7 +218,7 @@ $this_is_player = (!empty($this_is_player));
 				<?php __($person['gender']); ?>&nbsp;
 
 			</dd>
-			<?php if ($is_me || $is_admin || $is_manager || $is_coordinator || $is_captain):?>
+			<?php if ($is_me || $is_relative || $is_admin || $is_manager || $is_coordinator || $is_captain):?>
 				<?php if (Configure::read('profile.height') && !empty($person['height'])): ?>
 				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Height'); ?></dt>
 				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
@@ -234,22 +234,35 @@ $this_is_player = (!empty($this_is_player));
 				</dd>
 				<?php endif; ?>
 			<?php endif; ?>
-			<?php if (Configure::read('profile.skill_level') && !empty ($person['skill_level'])):?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Skill Level'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php __(Configure::read("options.skill.{$person['skill_level']}")) ; ?>
+			<?php if (Configure::read('profile.skill_level') && !empty ($skills)):?>
+				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Skill Level'); ?></dt>
+				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+					<?php
+					$sports = array();
+					foreach ($skills as $skill) {
+						Configure::load("sport/{$skill['Skill']['sport']}");
+						$sports[] = Inflector::humanize($skill['Skill']['sport']) . ': ' . __(Configure::read("options.skill.{$skill['Skill']['skill_level']}"), true);
+					}
+					echo implode('<br />', $sports);
+					?>
 
 			</dd>
 			<?php endif; ?>
-			<?php if ($is_logged_in && !empty ($person['year_started'])):?>
+			<?php if ($is_logged_in && Configure::read('profile.year_started') && !empty ($skills)):?>
 				<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Year Started'); ?></dt>
 				<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-					<?php echo $person['year_started']; ?>
+					<?php
+					$sports = array();
+					foreach ($skills as $skill) {
+						$sports[] = Inflector::humanize($skill['Skill']['sport']) . ': ' . $skill['Skill']['year_started'];
+					}
+					echo implode('<br />', $sports);
+					?>
 
 				</dd>
 			<?php endif; ?>
 		<?php endif; ?>
-		<?php if ($is_me || $is_admin || $is_manager):?>
+		<?php if ($is_me || $is_relative || $is_admin || $is_manager):?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __n('Account Class', 'Account Classes', count($groups)); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php
@@ -274,13 +287,6 @@ $this_is_player = (!empty($this_is_player));
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Has Dog'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php $person['has_dog'] ? __('Yes') : __('No'); ?>
-
-			</dd>
-			<?php endif; ?>
-			<?php if (Configure::read('profile.willing_to_volunteer')): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Willing To Volunteer'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php $person['willing_to_volunteer'] ? __('Yes') : __('No'); ?>
 
 			</dd>
 			<?php endif; ?>
@@ -316,14 +322,14 @@ $this_is_player = (!empty($this_is_player));
 			}
 			echo $this->Html->tag ('li', $this->Html->link($link, array('action' => 'note', 'person' => $person['id'])));
 		}
-		if ($is_me || $is_admin || $is_manager) {
+		if ($is_me || $is_relative || $is_admin || $is_manager) {
 			echo $this->Html->tag ('li', $this->ZuluruHtml->iconLink('edit_24.png', array('action' => 'edit', 'person' => $person['id'], 'return' => true), array('alt' => __('Edit Profile', true), 'title' => __('Edit Profile', true))));
 			echo $this->Html->tag ('li', $this->Html->link(__('Edit Preferences', true), array('action' => 'preferences', 'person' => $person['id'])));
 			if (!empty($person['user_id'])) {
 				echo $this->Html->tag ('li', $this->Html->link(__('Change Password', true), array('controller' => 'users', 'action' => 'change_password', 'user' => $person['user_id'])));
 			}
 		}
-		if ($is_admin || $is_manager) {
+		if ($is_relative || $is_admin || $is_manager) {
 			echo $this->Html->tag ('li', $this->Html->link(__('Act As', true), array('controller' => 'people', 'action' => 'act_as', 'person' => $person['id'])));
 			echo $this->Html->tag ('li', $this->ZuluruHtml->iconLink('delete_24.png', array('action' => 'delete', 'person' => $person['id']), array('alt' => __('Delete Player', true), 'title' => __('Delete Player', true)), array('confirm' => sprintf(__('Are you sure you want to delete # %s?', true), $person['id']))));
 		}
@@ -449,8 +455,8 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 </div>
 <?php endif; ?>
 
- <?php if (($is_admin || $is_manager || $is_me) && (!empty($relatives) || !empty($related_to))):?>
- <div class="related">
+<?php if (($is_admin || $is_manager || $is_me || $is_relative) && (!empty($relatives) || !empty($related_to))):?>
+<div class="related">
 	<h3><?php __('Relatives');?></h3>
 	<table class="list">
 	<tr>
@@ -502,13 +508,15 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 		<?php endforeach; ?>
 	</table>
 
+	<?php if ($is_me): ?>
 	<div class="actions">
 		<ul>
 			<li><?php echo $this->Html->link(__('Link a relative', true), array('controller' => 'people', 'action' => 'link_relative')); ?> </li>
 		</ul>
 	</div>
- </div>
- <?php endif; ?>
+	<?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php if ($is_logged_in && Configure::read('feature.badges') && !empty($badges['Badge'])): ?>
 <div class="related">
@@ -577,7 +585,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 <?php endif; ?>
 
 <?php if (Configure::read('feature.registration')):?>
-<?php if ($is_admin || $is_manager || ($is_me && !empty($preregistrations))):?>
+<?php if ($is_admin || $is_manager || (($is_me || $is_relative) && !empty($preregistrations))):?>
 <div class="related">
 	<h3><?php __('Preregistrations');?></h3>
 	<?php if (!empty($preregistrations)):?>
@@ -614,7 +622,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 </div>
 <?php endif; ?>
 
-<?php if (($is_admin || $is_manager || $is_me) && !empty($registrations)):?>
+<?php if (($is_admin || $is_manager || $is_me || $is_relative) && !empty($registrations)):?>
 <div class="related">
 	<h3><?php __('Recent Registrations');?></h3>
 	<table class="list">
@@ -659,7 +667,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 </div>
 <?php endif; ?>
 
-<?php if (($is_admin || $is_manager || $is_me) && !empty($credits)):?>
+<?php if (($is_admin || $is_manager || $is_me || $is_relative) && !empty($credits)):?>
 	<div class="related">
 	<h3><?php __('Available Credits');?></h3>
 	<p>These credits can be applied to future registrations.</p>
@@ -695,7 +703,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if ($is_admin || $is_manager || $is_me): ?>
+<?php if ($is_admin || $is_manager || $is_me || $is_relative): ?>
 <div class="related">
 	<h3><?php __('Waivers');?></h3>
 <?php if(!empty($waivers)): ?>
@@ -736,7 +744,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 </div>
 <?php endif; ?>
 
-<?php if (Configure::read('feature.documents') && ($is_admin || $is_manager || $is_me)):?>
+<?php if (Configure::read('feature.documents') && ($is_admin || $is_manager || $is_me || $is_relative)):?>
 <div class="related">
 	<h3><?php __('Documents');?></h3>
 <?php if (!empty($documents)): ?>
@@ -789,7 +797,7 @@ if ($is_logged_in && ($this_is_player || !empty($all_teams))): ?>
 </div>
 <?php endif; ?>
 
-<?php if (($is_admin || $is_manager || $is_me) && !empty($tasks)):?>
+<?php if (($is_admin || $is_manager || $is_me || $is_relative) && !empty($tasks)):?>
 	<div class="related">
 <h3><?php __('Assigned Tasks'); ?></h3>
 <table class="list">

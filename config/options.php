@@ -262,6 +262,7 @@ $config['options'] = array(
 			'fixed_dates'		=> 'Fixed dates',
 			'elapsed_time'		=> 'A fixed duration',
 			'event'				=> 'Duration of the event',
+			'never'				=> 'Never expires',
 		),
 	),
 

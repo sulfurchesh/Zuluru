@@ -3,10 +3,6 @@ $this->Html->addCrumb (__('Users', true));
 $this->Html->addCrumb (__('Create', true));
 
 $short = Configure::read('organization.short_name');
-
-// TODO: Handle more than one sport in a site
-$sport = reset(array_keys(Configure::read('options.sport')));
-Configure::load("sport/$sport");
 ?>
 
 <p><?php
@@ -113,7 +109,8 @@ if (Configure::read('feature.antispam')):
 		</div>
 	<fieldset class="parent" style="display:none; float:left">
 		<legend><?php __('Alternate Contact (optional)'); ?></legend>
-		<p style="max-width:18em;">This alternate contact information is for display purposes only. If the alternate contact should have their own login details, do not enter their information here; instead create a separate account and then link them together.</p>
+		<p style="max-width:18em;">This alternate parent/guardian contact information is for display purposes only. If the alternate contact should have their own login, do not enter their information here; instead create a separate account and then link them together.</p>
+		<p style="max-width:18em;">This is not for your child's name; enter that in the "Child Profile" section below.</p>
 	<?php
 		echo $this->ZuluruForm->input('Person.0.alternate_first_name', array(
 			'label' => 'First Name',
@@ -280,31 +277,6 @@ if (Configure::read('feature.antispam')):
 				));
 			}
 		}
-		if (Configure::read('profile.year_started')) {
-			echo $this->ZuluruForm->input('Person.0.year_started', array(
-				'type' => 'select',
-				'options' => $this->Form->__generateOptions('year', array(
-						'min' => Configure::read('options.year.started.min'),
-						'max' => Configure::read('options.year.started.max'),
-						'order' => 'desc'
-				)),
-				'empty' => '---',
-				'after' => $this->Html->para(null, 'The year you started playing in <strong>this</strong> league.'),
-			));
-		}
-		if (Configure::read('profile.skill_level')) {
-			if (Configure::read('sport.rating_questions')) {
-				$after = $this->Html->para(null, __('Please use the questionnaire to ', true) . $this->Html->link (__('calculate your rating', true), '#', array('onclick' => 'dorating("#Person0SkillLevel"); return false;')) . '.');
-			} else {
-				$after = null;
-			}
-			echo $this->ZuluruForm->input('Person.0.skill_level', array(
-				'type' => 'select',
-				'empty' => '---',
-				'options' => Configure::read('options.skill'),
-				'after' => $after,
-			));
-		}
 		if (Configure::read('profile.height')) {
 			if (Configure::read('feature.units') == 'Metric') {
 				$units = __('centimeters', true);
@@ -326,6 +298,7 @@ if (Configure::read('feature.antispam')):
 		if (Configure::read('feature.dog_questions')) {
 			echo $this->ZuluruForm->input('Person.0.has_dog');
 		}
+		echo $this->element('people/skill_edit', array('prefix' => 'Person.0'));
 	?>
 	</fieldset>
 	<fieldset class="parent" style="display:none;">
@@ -360,31 +333,6 @@ if (Configure::read('feature.antispam')):
 				));
 			}
 		}
-		if (Configure::read('profile.year_started')) {
-			echo $this->ZuluruForm->input('Person.1.year_started', array(
-				'type' => 'select',
-				'options' => $this->Form->__generateOptions('year', array(
-						'min' => Configure::read('options.year.started.min'),
-						'max' => Configure::read('options.year.started.max'),
-						'order' => 'desc'
-				)),
-				'empty' => '---',
-				'after' => $this->Html->para(null, 'The year you started playing in <strong>this</strong> league.'),
-			));
-		}
-		if (Configure::read('profile.skill_level')) {
-			if (Configure::read('sport.rating_questions')) {
-				$after = $this->Html->para(null, __('Please use the questionnaire to ', true) . $this->Html->link (__('calculate your rating', true), '#', array('onclick' => 'dorating("#Person1SkillLevel"); return false;')) . '.');
-			} else {
-				$after = null;
-			}
-			echo $this->ZuluruForm->input('Person.1.skill_level', array(
-				'type' => 'select',
-				'empty' => '---',
-				'options' => Configure::read('options.skill'),
-				'after' => $after,
-			));
-		}
 		if (Configure::read('profile.height')) {
 			if (Configure::read('feature.units') == 'Metric') {
 				$units = __('centimeters', true);
@@ -403,6 +351,7 @@ if (Configure::read('feature.antispam')):
 				'options' => Configure::read('options.shirt_size'),
 			));
 		}
+		echo $this->element('people/skill_edit', array('prefix' => 'Person.1'));
 	?>
 	</fieldset>
 <?php
@@ -413,35 +362,43 @@ echo $this->Form->end();
 </div>
 
 <?php
-if (Configure::read('profile.skill_level') && Configure::read('sport.rating_questions')) {
-	echo $this->element('people/rating', array('sport' => $sport));
+if (Configure::read('profile.skill_level')) {
+	$sports = Configure::read('options.sport');
+	foreach (array_keys($sports) as $sport) {
+		Configure::load("sport/$sport");
+		if (Configure::read('sport.rating_questions')) {
+			echo $this->element('people/rating', array('sport' => $sport));
+		}
+	}
 }
 
 // Handle changes to parent and player checkboxes
-$this->Js->get('#GroupGroup1')->event('change', 'parentChanged();');
-$this->Js->get('#GroupGroup2')->event('change', 'playerChanged();');
-echo $this->Html->scriptBlock('
-function parentChanged() {
-	var checked = jQuery("#GroupGroup1").prop("checked");
+$player = GROUP_PLAYER;
+$parent = GROUP_PARENT;
+$this->Js->get("#GroupGroup$player")->event('change', 'playerChanged();');
+$this->Js->get("#GroupGroup$parent")->event('change', 'parentChanged();');
+echo $this->Html->scriptBlock("
+function playerChanged() {
+	var checked = jQuery('#GroupGroup$player').prop('checked');
 	if (checked) {
-		jQuery(".parent").css("display", "");
-		jQuery(".parent input, .parent select").removeAttr("disabled");
+		jQuery('.player').css('display', '');
+		jQuery('.player input, .player select').removeAttr('disabled');
 	} else {
-		jQuery(".parent").css("display", "none");
-		jQuery(".parent input, .parent select").attr("disabled", "disabled");
+		jQuery('.player').css('display', 'none');
+		jQuery('.player input, .player select').attr('disabled', 'disabled');
 	}
 }
 
-function playerChanged() {
-	var checked = jQuery("#GroupGroup2").prop("checked");
+function parentChanged() {
+	var checked = jQuery('#GroupGroup$parent').prop('checked');
 	if (checked) {
-		jQuery(".player").css("display", "");
-		jQuery(".player input, .player select").removeAttr("disabled");
+		jQuery('.parent').css('display', '');
+		jQuery('.parent input, .parent select').removeAttr('disabled');
 	} else {
-		jQuery(".player").css("display", "none");
-		jQuery(".player input, .player select").attr("disabled", "disabled");
+		jQuery('.parent').css('display', 'none');
+		jQuery('.parent input, .parent select').attr('disabled', 'disabled');
 	}
 }
-');
+");
 $this->Js->buffer('parentChanged(); playerChanged();');
 ?>

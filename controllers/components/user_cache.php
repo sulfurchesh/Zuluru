@@ -47,8 +47,7 @@ class UserCacheComponent extends Object
 				$this->data[$this->my_id] = array();
 				$relatives = $this->read('RelativeIDs');
 				$groups = $this->read('GroupIDs');
-				// TODO: Eliminate hard-coded group_id
-				if (in_array($act_as, $relatives) || in_array(7, $groups)) {
+				if (in_array($act_as, $relatives) || in_array(GROUP_ADMIN, $groups)) {
 					$this->_controller->Session->write('Zuluru.act_as_id', $act_as);
 					$this->_controller->Session->write('Zuluru.act_as_temporary', true);
 				} else {
@@ -436,6 +435,19 @@ class UserCacheComponent extends Object
 						}
 						$self->data[$id][$key] = array_unique($self->data[$id][$key]);
 					}
+					break;
+
+				case 'Skills':
+					if (!isset($self->_controller->Skill)) {
+						$self->_controller->Skill = ClassRegistry::init('Skill');
+					}
+					$self->data[$id][$key] = $self->_findData($self->_controller->Skill, array(
+							'order' => 'Skill.sport',
+							'contain' => false,
+							'conditions' => array(
+								'person_id' => $id,
+							),
+					));
 					break;
 
 				case 'Tasks':

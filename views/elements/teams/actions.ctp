@@ -43,7 +43,7 @@ if ($team['division_id']) {
 	}
 }
 if (Configure::read('feature.attendance') && $team['track_attendance']) {
-	if ($is_captain) {
+	if ($is_admin || $is_manager || $is_captain) {
 		$links[] = $this->ZuluruHtml->iconLink("team_event_add_$size.png",
 			array('controller' => 'team_events', 'action' => 'add', 'team' => $team['id']),
 			array('alt' => __('Team Event', true), 'title' => __('Add a Team Event', true)));
@@ -58,8 +58,7 @@ if (Configure::read('feature.attendance') && $team['track_attendance']) {
 	}
 }
 if ($is_logged_in && $team['open_roster'] && $team['division_id'] && !Division::rosterDeadlinePassed($division) &&
-	// TODO: Eliminate hard-coded group_id
-	in_array(2, $this->UserCache->read('GroupIDs')) && !in_array($team['id'], $this->UserCache->read('TeamIDs')))
+	in_array(GROUP_PLAYER, $this->UserCache->read('GroupIDs')) && !in_array($team['id'], $this->UserCache->read('TeamIDs')))
 {
 	$links[] = $this->ZuluruHtml->iconLink("roster_add_$size.png",
 		array('controller' => 'teams', 'action' => 'roster_request', 'team' => $team['id']),
