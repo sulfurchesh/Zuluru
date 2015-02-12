@@ -2,34 +2,34 @@
 // Futsal-specific functions
 //
 
-function maxLength() { return 40; }
-function defaultLength() { return 25; }
-function minLength() { return 20; }
-function maxWidth() { return 25; }
-function defaultWidth() { return 15; }
-function minWidth() { return 15; }
+function futsalMaxLength() { return 40; }
+function futsalDefaultLength() { return 25; }
+function futsakMinLength() { return 20; }
+function futsalMaxWidth() { return 25; }
+function futsakDefaultWidth() { return 15; }
+function futsalMinWidth() { return 15; }
 
-function boxLength(length)
+function futsalBoxLength(length)
 {
 	return Math.min(length * 0.25, 18);
 }
 
-function boxWidth(width)
+function futsalBoxWidth(width)
 {
 	return Math.min(width * 0.75, 44);
 }
 
-function circleRadius(length)
+function futsalCircleRadius(length)
 {
-	return Math.min((length - 2 * boxLength(length)) * 0.2, 10);
+	return Math.min((length - 2 * futsalBoxLength(length)) * 0.2, 10);
 }
 
-function layoutText(id)
+function futsalLayoutText(id)
 {
 	return null;
 }
 
-function outlinePositions(id)
+function futsalOutlinePositions(id)
 {
 	var position = fields[id].marker.getPosition();
 
@@ -42,10 +42,10 @@ function outlinePositions(id)
 	return bb;
 }
 
-function inlinePositions(id)
+function futsalInlinePositions(id)
 {
-	var box_length = boxLength(fields[id].length);
-	var box_width = boxWidth(fields[id].width);
+	var box_length = futsalBoxLength(fields[id].length);
+	var box_width = futsalBoxWidth(fields[id].width);
 	var position = fields[id].marker.getPosition();
 
 	var bb = new Array;
@@ -68,23 +68,23 @@ function inlinePositions(id)
 	bb[2][2] = makePosition(bb[2][1], box_width, 0 - fields[id].angle);
 	bb[2][3] = makePosition(bb[2][2], box_length, 270 - fields[id].angle);
 
-	bb[3] = makeCircle(position, circleRadius(fields[id].length));
+	bb[3] = makeCircle(position, futsalCircleRadius(fields[id].length));
 
 	return bb;
 }
 
-function updateForm()
+function futsalUpdateForm()
 {
-	jQuery('#show_angle').html(fields[current].angle);
-	jQuery('#show_width').html(fields[current].width);
-	jQuery('#show_length').html(fields[current].length);
+	jQuery('#soccer_fields #show_angle').html(fields[current].angle);
+	jQuery('#soccer_fields #show_width').html(fields[current].width);
+	jQuery('#soccer_fields #show_length').html(fields[current].length);
 }
 
-function saveField()
+function futsalSaveField()
 {
 	if (current != 0) {
-		fields[current].angle = parseInt (jQuery('#show_angle').html());
-		fields[current].width = parseInt (jQuery('#show_width').html());
-		fields[current].length = parseInt (jQuery('#show_length').html());
+		fields[current].angle = parseInt (jQuery('#soccer_fields #show_angle').html());
+		fields[current].width = parseInt (jQuery('#soccer_fields #show_width').html());
+		fields[current].length = parseInt (jQuery('#soccer_fields #show_length').html());
 	}
 }

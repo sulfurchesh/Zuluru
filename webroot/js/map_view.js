@@ -45,7 +45,7 @@ function drawFields()
 					'<br>Surface: ' + fields[id].surface +
 					'</p>';
 		// Non-relevant for soccer/futsal... need better way to hide
-		// var layout = layoutText(id);
+		// var layout = window[fields[id].sport + 'LayoutText'](id);
 		// if (layout != null) {
 		//	text += '<h4>Suggested field layout:</h4>' + layout + '</p>';
 		//}

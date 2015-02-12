@@ -150,6 +150,7 @@ class CanRegisterComponent extends Object
 
 						$this->_controller->UserCache->clear('Registrations', $this->person['Person']['id']);
 						$this->_controller->UserCache->clear('RegistrationsUnpaid', $this->person['Person']['id']);
+						$this->_controller->UserCache->clear('RegistrationsCanPay', $this->person['Person']['id']);
 					} else {
 						$messages[] = array('text' => __('Your payment was not received in time, so you will not be able to complete this registration. If you have any questions about this, please contact the head office.', true), 'class' => 'error-message');
 					}
@@ -249,7 +250,7 @@ class CanRegisterComponent extends Object
 				// Check the registration rule, if any
 				if (!empty ($price['register_rule'])) {
 					if (!$rule_obj->init ($price['register_rule'])) {
-						$this->_controller->Session->setFlash(__('Failed to parse the rule', true), 'default', array('class' => 'error'));
+						$this->_controller->Session->setFlash(sprintf (__('Failed to parse the rule: %s', true), $rule_obj->parse_error), 'default', array('class' => 'error'));
 					} else {
 						$price_allowed[$price['id']] = array(
 							'allowed' => $rule_obj->evaluate($event['Event']['affiliate_id'], $this->person, null, $strict, false),

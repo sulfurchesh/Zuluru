@@ -61,6 +61,7 @@ class EventTypeComponent extends Object
 	function register($event, &$data) {
 		$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
 		$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
 
 		return true;
 	}
@@ -68,7 +69,9 @@ class EventTypeComponent extends Object
 	function unregister($event, $data, $recursive = true) {
 		if ($this->_controller->Registration->delete($data['Registration']['id'])) {
 			$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
+			$this->_controller->UserCache->clear('RegistrationsPaid', $data['Registration']['person_id']);
 			$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+			$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
 
 			// Check if anything else must be removed as a result (e.g. team reg after removing membership)
 			while ($recursive && $this->_unregisterDependencies($data['Registration']['person_id'])) {
@@ -199,6 +202,7 @@ class EventTypeComponent extends Object
 					}
 					$this->_controller->UserCache->clear('Registrations', $registration['Registration']['person_id']);
 					$this->_controller->UserCache->clear('RegistrationsUnpaid', $registration['Registration']['person_id']);
+					$this->_controller->UserCache->clear('RegistrationsCanPay', $registration['Registration']['person_id']);
 				}
 
 				$this->_restoreViewVars();
@@ -207,6 +211,7 @@ class EventTypeComponent extends Object
 
 		$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
 		$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
 
 		return true;
 	}
@@ -279,6 +284,7 @@ class EventTypeComponent extends Object
 
 		$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
 		$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
 
 		return $new_payment;
 	}
@@ -292,8 +298,14 @@ class EventTypeComponent extends Object
 			}
 		}
 
+		// Delete any preregistration; ignore errors, the worst case scenario is an unusable preregistration
+		$this->_controller->Registration->Event->Preregistration->deleteAll(array('event_id' => $event['Event']['id'], 'person_id' => $data['Registration']['person_id']), false);
+
 		$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
 		$this->_controller->UserCache->clear('RegistrationsPaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('Preregistrations', $data['Registration']['person_id']);
 
 		return true;
 	}
@@ -309,6 +321,8 @@ class EventTypeComponent extends Object
 
 		$this->_controller->UserCache->clear('Registrations', $data['Registration']['person_id']);
 		$this->_controller->UserCache->clear('RegistrationsPaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsUnpaid', $data['Registration']['person_id']);
+		$this->_controller->UserCache->clear('RegistrationsCanPay', $data['Registration']['person_id']);
 
 		return true;
 	}

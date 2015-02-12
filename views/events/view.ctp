@@ -17,6 +17,9 @@ $admin_register = false;
 
 <div class="events view">
 	<h2><?php echo $event['Event']['name'];?></h2>
+	<?php
+	echo $this->element('registrations/relative_notice');
+	?>
 	<dl><?php $i = 0; $class = ' class="altrow"';?>
 		<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Name'); ?></dt>
 		<dd<?php if ($i++ % 2 == 0) echo $class;?>>
@@ -279,7 +282,9 @@ $admin_register = false;
 if (!$is_logged_in):
 	echo $this->element('events/not_logged_in');
 else:
-	echo $this->element('messages');
+	if ($allowed || count($messages) == 1) {
+		echo $this->element('messages');
+	}
 	if ($allowed) {
 		echo $this->Html->tag ('h2', $this->Html->link(__('Register now!', true),
 				array('controller' => 'registrations', 'action' => 'register', 'event' => $id),

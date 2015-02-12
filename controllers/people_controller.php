@@ -45,7 +45,6 @@ class PeopleController extends AppController {
 				'document_upload',
 				'registrations',
 				'credits',
-				'act_as',
 		)))
 		{
 			// If a player id is specified, check if it's the logged-in user, or a relative
@@ -67,10 +66,15 @@ class PeopleController extends AppController {
 			}
 		}
 
-		// People can always act as their real id
 		if ($this->params['action'] == 'act_as') {
-			// If a player id is specified, check if it's the real user
-			if ($this->_arg('person') == $this->UserCache->realId()) {
+			// People can always act as their real id, or as any relative of the current or real user
+			$person = $this->_arg('person');
+			if ($person) {
+				$relatives = $this->UserCache->allActAs();
+				if (array_key_exists($person, $relatives)) {
+					return true;
+				}
+			} else {
 				return true;
 			}
 		}
@@ -138,6 +142,7 @@ class PeopleController extends AppController {
 	function index() {
 		$affiliates = $this->_applicableAffiliateIDs(true);
 		$this->set(compact('affiliates'));
+		$group_id = $this->_arg('group');
 
 		$user_model = $this->Auth->authenticate->name;
 		$id_field = $this->Auth->authenticate->primaryKey;
@@ -150,54 +155,74 @@ class PeopleController extends AppController {
 			$prefix = "{$config['database']}.$prefix";
 		}
 
-		$this->paginate = array(
-				'conditions' => array(
-					'Affiliate.id' => $affiliates
-				),
-				'joins' => array(
-					array(
-						'table' => "{$this->Person->tablePrefix}affiliates_people",
-						'alias' => 'AffiliatePerson',
-						'type' => 'LEFT',
-						'foreignKey' => false,
-						'conditions' => 'AffiliatePerson.person_id = Person.id',
-					),
-					array(
-						'table' => "{$this->Person->tablePrefix}affiliates",
-						'alias' => 'Affiliate',
-						'type' => 'LEFT',
-						'foreignKey' => false,
-						'conditions' => 'Affiliate.id = AffiliatePerson.affiliate_id',
-					),
-					array(
-						'table' => "$prefix{$this->Auth->authenticate->useTable}",
-						'alias' => $user_model,
-						'type' => 'LEFT',
-						'foreignKey' => false,
-						'conditions' => "$user_model.$id_field = Person.user_id",
-					),
-				),
-				'contain' => array(),
-				'fields' => array('Person.*', 'Affiliate.*', "$user_model.*"),
-				'order' => array('Affiliate.name', 'Person.last_name', 'Person.first_name'),
-				'limit' => Configure::read('feature.items_per_page'),
+		$joins = array(
+			array(
+				'table' => "{$this->Person->tablePrefix}affiliates_people",
+				'alias' => 'AffiliatePerson',
+				'type' => 'LEFT',
+				'foreignKey' => false,
+				'conditions' => 'AffiliatePerson.person_id = Person.id',
+			),
+			array(
+				'table' => "{$this->Person->tablePrefix}affiliates",
+				'alias' => 'Affiliate',
+				'type' => 'LEFT',
+				'foreignKey' => false,
+				'conditions' => 'Affiliate.id = AffiliatePerson.affiliate_id',
+			),
+			array(
+				'table' => "$prefix{$this->Auth->authenticate->useTable}",
+				'alias' => $user_model,
+				'type' => 'LEFT',
+				'foreignKey' => false,
+				'conditions' => "$user_model.$id_field = Person.user_id",
+			),
 		);
 
-		$group_id = $this->_arg('group');
+		$conditions = array(
+			'Affiliate.id' => $affiliates
+		);
+
 		if ($group_id) {
-			$this->paginate['joins'][] = array(
+			$joins[] = array(
 				'table' => "{$this->Person->tablePrefix}groups_people",
 				'alias' => 'GroupPerson',
 				'type' => 'LEFT',
 				'foreignKey' => false,
 				'conditions' => 'GroupPerson.person_id = Person.id',
 			);
-			$this->paginate['conditions']['GroupPerson.group_id'] = $group_id;
+			$conditions['GroupPerson.group_id'] = $group_id;
 			$group = $this->Person->Group->field('name', array('id' => $group_id));
 			$this->set(compact('group'));
 		}
 
-		$this->set('people', $this->paginate());
+		if ($this->params['url']['ext'] == 'csv') {
+			Configure::write ('debug', 0);
+			$this->set('people', $this->Person->find ('all', array(
+					'conditions' => $conditions,
+					'joins' => $joins,
+					'contain' => 'Related',
+					'fields' => array('DISTINCT Person.id', 'Person.*', 'Affiliate.*', "$user_model.*"),
+					'order' => array('Affiliate.name', 'Person.last_name', 'Person.first_name', 'Person.id'),
+			)));
+			if ($group_id) {
+				$this->set('download_file_name', Inflector::pluralize($group));
+			} else {
+				$this->set('download_file_name', 'People');
+			}
+			$this->render('rule_search');
+		} else {
+			$this->paginate = array(
+					'conditions' => $conditions,
+					'joins' => $joins,
+					'contain' => array(),
+					'fields' => array('DISTINCT Person.id', 'Person.*', 'Affiliate.*', "$user_model.*"),
+					'order' => array('Affiliate.name', 'Person.last_name', 'Person.first_name', 'Person.id'),
+					'limit' => Configure::read('feature.items_per_page'),
+			);
+
+			$this->set('people', $this->paginate());
+		}
 	}
 
 	function statistics() {
@@ -900,7 +925,7 @@ class PeopleController extends AppController {
 		$this->set(compact('id', 'is_me'));
 
 		$this->_loadAddressOptions();
-		$this->_loadGroupOptions(true);
+		$groups = $this->_loadGroupOptions(true);
 		$this->_loadAffiliateOptions();
 
 		if (!empty($this->data)) {
@@ -965,10 +990,17 @@ class PeopleController extends AppController {
 				}
 			}
 
+			// Preserve any higher-level groups that a relative editing the profile won't have access to
+			foreach ($this->UserCache->read('GroupIDs', $id) as $group) {
+				if (!array_key_exists($group, $groups)) {
+					$this->data['Group']['Group'][] = $group;
+				}
+			}
+
 			if ($this->Person->validates() && $this->Person->Skill->validates() && $this->Person->Group->validates() && $this->Person->Affiliate->validates()) {
 				if (!empty($this->data['Affiliate']['Affiliate'])) {
 					foreach ($this->data['Affiliate']['Affiliate'] as $key => $affiliate_id) {
-						if (in_array($affiliate_id, $this->UserCache->read('ManagedAffiliateIDs'))) {
+						if (in_array($affiliate_id, $this->UserCache->read('ManagedAffiliateIDs', $id))) {
 							$position = 'manager';
 						} else {
 							unset($position);
@@ -1187,7 +1219,9 @@ class PeopleController extends AppController {
 				$this->data['Person']['status'] = 'active';
 			}
 
-			$transaction = new DatabaseTransaction($this->Person);
+			// User and person records may be in separate databases, so we need a transaction for each
+			$user_transaction = new DatabaseTransaction($this->Auth->authenticate);
+			$person_transaction = new DatabaseTransaction($this->Person);
 			$this->Person->create();
 			if (!$this->Person->saveAll($this->data)) {
 				return;
@@ -1216,7 +1250,8 @@ class PeopleController extends AppController {
 				$component->onAdd($this->data);
 			}
 
-			$transaction->commit();
+			$user_transaction->commit();
+			$person_transaction->commit();
 			if (isset($this->params['form']['continue'])) {
 				$this->data = null;
 			} else {
@@ -2346,32 +2381,32 @@ class PeopleController extends AppController {
 	}
 
 	function delete() {
-		if (!Configure::read('feature.manage_accounts')) {
-			$this->Session->setFlash (__('This system uses ' . Configure::read('feature.manage_name') . ' to manage user accounts. Account deletion through Zuluru is disabled.', true), 'default', array('class' => 'info'));
-			$this->redirect('/');
-		}
-
 		$id = $this->_arg('person');
 		if (!$id) {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
 			$this->redirect('/');
 		}
 
-		// TODO: Don't delete the only admin
-		$dependencies = $this->Person->dependencies($id, array('Affiliate'));
+		$dependencies = $this->Person->dependencies($id, array('Affiliate', 'Group', 'Relative', 'Related', 'Skill', 'Setting'));
 		if ($dependencies !== false) {
 			$this->Session->setFlash(__('The following records reference this person, so it cannot be deleted.', true) . '<br>' . $dependencies, 'default', array('class' => 'warning'));
 			$this->redirect('/');
 		}
-		if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-			$this->Auth->authenticate->delete_duplicate_user($id);
+
+		// Don't delete the only admin
+		if (in_array(GROUP_ADMIN, $this->UserCache->read('GroupIDs', $id))) {
+			$admins = $this->Person->GroupsPerson->find('count', array('conditions' => array('group_id' => GROUP_ADMIN)));
+			if ($admins == 1) {
+				$this->Session->setFlash(__('You cannot delete the only administrator.', true), 'default', array('class' => 'info'));
+				$this->redirect('/');
+			}
 		}
-		if ($this->Person->delete($id)) {
+
+		if ($this->_deleteWithRelatives($id)) {
 			$this->Session->setFlash(sprintf(__('%s deleted', true), __('Person', true)), 'default', array('class' => 'success'));
-			// TODO: Unwind any registrations, including calling event_obj for additional processing like deleting team records
-			$this->redirect('/');
+		} else {
+			$this->Session->setFlash(sprintf(__('%s was not deleted', true), __('Person', true)), 'default', array('class' => 'warning'));
 		}
-		$this->Session->setFlash(sprintf(__('%s was not deleted', true), __('Person', true)), 'default', array('class' => 'warning'));
 		$this->redirect('/');
 	}
 
@@ -2501,7 +2536,7 @@ class PeopleController extends AppController {
 			// Handle the rule
 			$rule_obj = AppController::_getComponent ('Rule', '', $this, true);
 			if (!$rule_obj->init ($params['rule'])) {
-				$this->set('error', __('Failed to parse the rule.', true));
+				$this->set('error', sprintf (__('Failed to parse the rule: %s', true), $rule_obj->parse_error));
 				return;
 			}
 			if (!array_key_exists('rule64', $params)) {
@@ -2528,12 +2563,28 @@ class PeopleController extends AppController {
 
 				if ($this->params['url']['ext'] == 'csv') {
 					Configure::write ('debug', 0);
+					$user_model = $this->Auth->authenticate->name;
+					$id_field = $this->Auth->authenticate->primaryKey;
+					$config = new DATABASE_CONFIG;
+					$prefix = $this->Auth->authenticate->tablePrefix;
+					if ($this->Auth->authenticate->useDbConfig != 'default') {
+						$config_name = $this->Auth->authenticate->useDbConfig;
+						$config = $config->$config_name;
+						$prefix = "{$config['database']}.$prefix";
+					}
 					$this->set('people', $this->Person->find ('all', array(
 							'conditions' => $conditions,
-							'contain' => false,
-							'fields' => array('DISTINCT Person.id', 'Person.*'),
+							'contain' => 'Related',
+							'fields' => array('DISTINCT Person.id', 'Person.*', "$user_model.*"),
 							'order' => array('Person.last_name', 'Person.first_name', 'Person.id'),
 							'joins' => array(
+								array(
+									'table' => "$prefix{$this->Auth->authenticate->useTable}",
+									'alias' => $this->Auth->authenticate->name,
+									'type' => 'LEFT',
+									'foreignKey' => false,
+									'conditions' => "$user_model.$id_field = Person.user_id",
+								),
 								array(
 									'table' => "{$this->Person->tablePrefix}affiliates_people",
 									'alias' => 'AffiliatePerson',
@@ -2677,17 +2728,19 @@ class PeopleController extends AppController {
 			$dup_id = null;
 		}
 
-		$this->Person->contain('Group', 'Related', $this->Auth->authenticate->name);
+		$this->Person->contain('Group', 'Related', 'Setting', 'Skill', $this->Auth->authenticate->name);
 		$person_id = $this->data['Person']['id'];
 		$person = $this->Person->read(null, $person_id);
+		// We want to read this record, as it updates the Person record with fields we might use later,
+		// but we don't actually want it in the thing we'll be saving.
+		unset($person[$this->Auth->authenticate->name]);
 		if (!empty ($dup_id)) {
-			$this->Person->contain('Group', 'Related', $this->Auth->authenticate->name);
+			$this->Person->contain('Group', 'Related', 'Setting', 'Skill', $this->Auth->authenticate->name);
 			$existing = $this->Person->read(null, $dup_id);
 		}
 
-		if (empty($person['Persion']['user_id'])) {
+		if (empty($person['Person']['user_id'])) {
 			$this->Person->beforeValidateChild();
-			unset($person[$this->Auth->authenticate->name]);
 		}
 
 		$this_is_player = Set::extract('/Group[id=' . GROUP_PLAYER . ']', $person);
@@ -2695,7 +2748,6 @@ class PeopleController extends AppController {
 			$this->Person->beforeValidateNonPlayer();
 		}
 
-		// TODO: Some of these require updates/deletions in the settings and skills tables
 		switch($disposition) {
 			case 'approved':
 				$data = array(
@@ -2730,40 +2782,15 @@ class PeopleController extends AppController {
 				break;
 
 			case 'delete':
-				if (!empty($person['Person']['user_id'])) {
-					if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-						$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
-					} else {
-						$this->Auth->authenticate->delete($person['Person']['user_id']);
-					}
-				}
-				if (! $this->Person->delete($person_id) ) {
+				if (!$this->_deleteWithRelatives($person_id)) {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
-				}
-				Cache::delete("person/$person_id", 'file');
-				foreach ($person['Related'] as $relative) {
-					$this->UserCache->clear('Relatives', $relative['id']);
-					$this->UserCache->clear('RelativeIDs', $relative['id']);
 				}
 				break;
 
 			case 'delete_duplicate':
-				if (!empty($person['Person']['user_id'])) {
-					if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
-						$this->Auth->authenticate->delete_duplicate_user($person['Person']['user_id']);
-					} else {
-						$this->Auth->authenticate->delete($person['Person']['user_id']);
-					}
-				}
-
-				if (! $this->Person->delete($person_id) ) {
+				if (!$this->_deleteWithRelatives($person_id)) {
 					$this->Session->setFlash(sprintf (__('Failed to delete %s', true), $person['Person']['full_name']), 'default', array('class' => 'warning'));
 					break;
-				}
-				Cache::delete("person/$person_id", 'file');
-				foreach ($person['Related'] as $relative) {
-					$this->UserCache->clear('Relatives', $relative['id']);
-					$this->UserCache->clear('RelativeIDs', $relative['id']);
 				}
 
 				$this->set(compact('person', 'existing'));
@@ -2782,13 +2809,56 @@ class PeopleController extends AppController {
 			// This is basically the same as the delete duplicate, except
 			// that some old information (e.g. user ID) is preserved
 			case 'merge_duplicate':
-				$transaction = new DatabaseTransaction($this->Person);
-				if (method_exists ($this->Auth->authenticate, 'merge_duplicate_user') && !empty($person['Person']['user_id']) && !empty($existing['Person']['user_id'])) {
-					$this->Auth->authenticate->merge_duplicate_user($person['Person']['user_id'], $existing['Person']['user_id']);
+				// User and person records may be in separate databases, so we need a transaction for each
+				$user_transaction = new DatabaseTransaction($this->Auth->authenticate);
+				$person_transaction = new DatabaseTransaction($this->Person);
+				if (!empty($person['Person']['user_id']) && !empty($existing['Person']['user_id'])) {
+					if (method_exists ($this->Auth->authenticate, 'merge_duplicate_user')) {
+						$this->Auth->authenticate->merge_duplicate_user($person['Person']['user_id'], $existing['Person']['user_id']);
+					} else {
+						$this->Auth->authenticate->delete($existing['Person']['user_id'], false);
+						$this->Auth->authenticate->updateAll (array("{$this->Auth->authenticate->name}.{$this->Auth->authenticate->primaryKey}" => $existing['Person']['user_id']), array("{$this->Auth->authenticate->name}.{$this->Auth->authenticate->primaryKey}" => $person['Person']['user_id']));
+					}
 				}
 
+				// Affiliates, groups, settings and skills need special handling
 				$this->Person->AffiliatesPerson->deleteAll(array('AffiliatesPerson.person_id' => $dup_id));
 				$person['Group'] = array('Group' => array_unique(array_merge(Set::extract('/Group/id', $person), Set::extract('/Group/id', $existing))));
+
+				// Delete the settings from the original profile, but then restore any that don't exist in the new profile.
+				$this->Person->Setting->deleteAll(array('Setting.person_id' => $dup_id));
+				$settings = array();
+				foreach ($existing['Setting'] as $setting) {
+					if ($setting['value'] !== '') {
+						$new = Set::extract("/Setting[category={$setting['category']}][name={$setting['name']}]/.", $person);
+						if (empty($new)) {
+							unset($setting['id']);
+							$settings[] = $setting;
+						} else if ($new[0]['value'] === '') {
+							$setting['id'] = $new[0]['id'];
+							$settings[] = $setting;
+						}
+					}
+				}
+				$person['Setting'] = $settings;
+
+				// Similar process for skills.
+				$this->Person->Skill->deleteAll(array('Skill.person_id' => $dup_id));
+				$skills = array();
+				foreach ($existing['Skill'] as $skill) {
+					if (!empty($skill['skill_level'])) {
+						$new = Set::extract("/Skill[sport={$skill['sport']}]/.", $person);
+						if (empty($new)) {
+							unset($skill['id']);
+							$skills[] = $skill;
+						} else if (empty($new[0]['skill_level'])) {
+							$skill['id'] = $new[0]['id'];
+							$skill['enabled'] = 0;
+							$skills[] = $skill;
+						}
+					}
+				}
+				$person['Skill'] = $skills;
 
 				// Update all related records
 				foreach ($this->Person->hasMany as $class => $details) {
@@ -2812,10 +2882,10 @@ class PeopleController extends AppController {
 					break;
 				}
 
-				// Unset a few fields that we want to retain from the old record
+				// A few fields that we want to retain from the old record
 				foreach (array('status', 'user_id') as $field) {
 					if (!empty($existing['Person'][$field])) {
-						unset ($person['Person'][$field]);
+						$person['Person'][$field] = $existing['Person'][$field];
 					}
 				}
 				$person['Person']['id'] = $dup_id;
@@ -2825,7 +2895,8 @@ class PeopleController extends AppController {
 					$this->Session->setFlash(__('Couldn\'t save new member information', true), 'default', array('class' => 'warning'));
 					break;
 				} else {
-					$transaction->commit();
+					$user_transaction->commit();
+					$person_transaction->commit();
 				}
 				Cache::delete("person/$person_id", 'file');
 				Cache::delete("person/$dup_id", 'file');
@@ -2851,6 +2922,55 @@ class PeopleController extends AppController {
 				}
 				break;
 		}
+	}
+
+	function _deleteWithRelatives($id) {
+		// Don't delete someone who is the only parent of someone that cannot be deleted
+		$relatives = $this->UserCache->read('Relatives', $id);
+		$delete_ids = array($id);
+		foreach ($relatives as $relative) {
+			if (empty($relative['Relative']['user_id'])) {
+				if (count($this->UserCache->read('RelatedToIDs', $relative['Relative']['id'])) == 1) {
+					$dependencies = $this->Person->dependencies($relative['Relative']['id'], array('Affiliate', 'Group', 'Relative', 'Related', 'Skill', 'Setting'));
+					if ($dependencies !== false) {
+						$this->Session->setFlash(__('You cannot delete the only parent of a child with history in the system.', true), 'default', array('class' => 'info'));
+						$this->redirect('/');
+					}
+					$delete_ids[] = $relative['Relative']['id'];
+				}
+			}
+		}
+
+		// User and person records may be in separate databases, so we need a transaction for each
+		$user_transaction = new DatabaseTransaction($this->Auth->authenticate);
+		$person_transaction = new DatabaseTransaction($this->Person);
+
+		$success = true;
+		foreach ($delete_ids as $id) {
+			$user_id = $this->UserCache->read('Person.user_id', $id);
+			if ($user_id) {
+				if (method_exists ($this->Auth->authenticate, 'delete_duplicate_user')) {
+					$success &= $this->Auth->authenticate->delete_duplicate_user($user_id);
+				} else {
+					$success &= $this->Auth->authenticate->delete($user_id, false);
+				}
+			}
+			$success &= $this->Person->delete($id);
+			$relatives = $this->UserCache->read('RelatedToIDs', $id);
+			foreach ($relatives as $relative) {
+				$this->UserCache->clear('Relatives', $relative);
+				$this->UserCache->clear('RelativeIDs', $relative);
+				$this->UserCache->clear('RelatedTo', $relative);
+				$this->UserCache->clear('RelatedToIDs', $relative);
+			}
+			Cache::delete("person/$id", 'file');
+		}
+
+		if ($success) {
+			$user_transaction->commit();
+			$person_transaction->commit();
+		}
+		return $success;
 	}
 
 	function vcf() {

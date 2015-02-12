@@ -18,6 +18,11 @@ if ($is_manager) {
 
 <div class="events index">
 <h2><?php __('Registration Events List');?></h2>
+<?php
+if ($is_logged_in) {
+	echo $this->element('registrations/relative_notice');
+}
+?>
 <?php if (empty($events)): ?>
 <p class="warning-message">There are no events currently available for registration. Please check back periodically for updates.</p>
 <?php else: ?>
@@ -27,8 +32,11 @@ if (!$is_logged_in) {
 	echo $this->element('events/not_logged_in');
 }
 
+$sports = array_unique(Set::extract('/Division/League/sport', $events));
+echo $this->element('selector', array('title' => 'Sport', 'options' => $sports));
+
 $seasons = array_unique(Set::extract('/Division/League/season', $events));
-echo $this->element('selector', array('title' => 'Season', 'options' => array_intersect(array_keys(Configure::read('options.season')), $seasons)));
+echo $this->element('selector', array('title' => 'Season', 'options' => $seasons));
 
 $days = Set::extract('/Division/Day[id!=]', $events);
 $days = Set::combine($days, '{n}.Day.id', '{n}.Day.name');
@@ -74,14 +82,14 @@ foreach ($events as $event):
 <?php
 	endif;
 
-	if ($event['Event']['close'] < $now && !($is_admin || $is_manager)) {
-		continue;
-	}
 	if ($event['EventType']['name'] != $last_name) {
 		$classes = array();
 		$i = 0;
 		if (in_array($event['EventType']['type'], $play_types)) {
 			$divisions = Set::extract("/Event[event_type_id={$event['Event']['event_type_id']}]/../Division", $events);
+
+			$sports = array_unique(Set::extract('/Division/League/sport', $divisions));
+			$classes[] = $this->element('selector_classes', array('title' => 'Sport', 'options' => $sports));
 
 			$seasons = array_unique(Set::extract('/Division/League/season', $divisions));
 			$classes[] = $this->element('selector_classes', array('title' => 'Season', 'options' => $seasons));
@@ -105,11 +113,13 @@ foreach ($events as $event):
 	}
 	if (in_array($event['EventType']['type'], $play_types)) {
 		if (!empty($event['Division']['id'])) {
+			$classes[] = $this->element('selector_classes', array('title' => 'Sport', 'options' => $event['Division']['League']['sport']));
 			$classes[] = $this->element('selector_classes', array('title' => 'Season', 'options' => $event['Division']['League']['season']));
 			$days = Set::combine($event, 'Division.Day.{n}.id', 'Division.Day.{n}.name');
 			ksort($days);
 			$classes[] = $this->element('selector_classes', array('title' => 'Day', 'options' => $days));
 		} else {
+			$classes[] = $this->element('selector_classes', array('title' => 'Sport', 'options' => array()));
 			$classes[] = $this->element('selector_classes', array('title' => 'Season', 'options' => array()));
 			$classes[] = $this->element('selector_classes', array('title' => 'Day', 'options' => array()));
 		}
@@ -161,6 +171,9 @@ foreach ($events as $event):
 				echo $this->ZuluruHtml->iconLink('connections_24.png',
 					array('action' => 'connections', 'event' => $event['Event']['id']),
 					array('alt' => $alt, 'title' => $alt));
+				echo $this->ZuluruHtml->iconLink('event_clone_24.png',
+					array('controller' => 'events', 'action' => 'add', 'event' => $event['Event']['id'], 'return' => true),
+					array('alt' => __('Clone Event', true), 'title' => __('Clone Event', true)));
 				echo $this->ZuluruHtml->iconLink('delete_24.png',
 					array('action' => 'delete', 'event' => $event['Event']['id']),
 					array('alt' => __('Delete', true), 'title' => __('Delete', true)),
@@ -227,8 +240,8 @@ foreach ($events as $event):
 		foreach ($event['Price'] as $price):
 		?>
 	<tr<?php echo $class;?>>
-		<td>
-			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?php echo $this->Html->link($price['name'], array('action' => 'view', 'event' => $event['Event']['id'])); ?>
+		<td class="price_point">
+			<?php echo $this->Html->link($price['name'], array('action' => 'view', 'event' => $event['Event']['id'])); ?>
 		</td>
 		<td>
 			<?php

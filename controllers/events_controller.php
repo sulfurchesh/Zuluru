@@ -63,12 +63,26 @@ class EventsController extends AppController {
 			$affiliates = $this->_applicableAffiliateIDs(true);
 		}
 
+		$conditions = array(
+			"Event.open < $open",
+			"Event.close > $close",
+		);
+
+		// Find any preregistrations
+		if ($this->is_logged_in) {
+			$prereg = $this->Event->Preregistration->find('list', array(
+				'conditions' => array('person_id' => $this->UserCache->currentId()),
+				'fields' => array('id', 'event_id'),
+			));
+			$conditions = array('OR' => array(
+				$conditions,
+				'Event.id' => $prereg,
+			));
+		}
+		$conditions['Event.affiliate_id'] = $affiliates;
+
 		$events = $this->Event->find('all', array(
-			'conditions' => array(
-				"Event.open < $open",
-				"Event.close > $close",
-				'Event.affiliate_id' => $affiliates,
-			),
+			'conditions' => $conditions,
 			'order' => array('Affiliate.name', 'Event.event_type_id', 'Event.open', 'Event.close', 'Event.id'),
 			'contain' => array(
 				'EventType',
@@ -258,6 +272,20 @@ class EventsController extends AppController {
 				$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('event', true)), 'default', array('class' => 'warning'));
 				$this->Configuration->loadAffiliate($this->data['Event']['affiliate_id']);
 			}
+		} else if ($this->_arg('event')) {
+			// To clone a event, read the old one and remove the id
+			$this->Event->contain(array('Price', 'EventType'));
+			$this->data = $this->Event->read(null, $this->_arg('event'));
+			if (!$this->data) {
+				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('event', true)), 'default', array('class' => 'info'));
+				$this->redirect(array('controller' => 'events', 'action' => 'index'));
+			}
+			unset($this->data['Event']['id']);
+			// TODO: Ability to clone multiple price points. Would also require ability to add and edit multiple price points at once.
+			if (count($this->data['Price']) > 1) {
+				$this->set('clone', true);
+			}
+			$this->data['Price'] = $this->data['Price'][0];
 		} else {
 			// Set up defaults
 			$this->data = array('EventType' => array(
@@ -342,9 +370,7 @@ class EventsController extends AppController {
 	function event_type_fields() {
 		Configure::write ('debug', 0);
 		$this->layout = 'ajax';
-		$this->Event->contain (array (
-			'EventType',
-		));
+		$this->Event->EventType->contain (array());
 		$type = $this->Event->EventType->read(null, $this->params['url']['data']['Event']['event_type_id']);
 		$this->set('event_obj', $this->_getComponent ('EventType', $type['EventType']['type'], $this));
 		$this->set('affiliates', $this->_applicableAffiliates(true));
@@ -356,7 +382,7 @@ class EventsController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('event', true)), 'default', array('class' => 'info'));
 			$this->redirect(array('action' => 'index'));
 		}
-		$dependencies = $this->Event->dependencies($id);
+		$dependencies = $this->Event->dependencies($id, array('Price'));
 		if ($dependencies !== false) {
 			$this->Session->setFlash(__('The following records reference this event, so it cannot be deleted.', true) . '<br>' . $dependencies, 'default', array('class' => 'warning'));
 			$this->redirect(array('action'=>'index'));

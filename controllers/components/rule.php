@@ -18,6 +18,11 @@ class RuleComponent extends Object
 	var $rule = null;
 
 	/**
+	 * Parse error text, to give help to rule writers
+	 */
+	var $parse_error = null;
+
+	/**
 	 * Reason why the rule passed or failed
 	 */
 	var $reason = 'Unknown reason!';
@@ -178,6 +183,10 @@ class RuleComponent extends Object
 			}
 		}
 		$this->log("Failed to initialize rule component $rule with $config.", 'rules');
+		if (!empty($rule_obj->parse_error)) {
+			$this->log($rule_obj->parse_error, 'rules');
+		}
+		$this->parse_error = $rule_obj->parse_error;
 		return null;
 	}
 
@@ -253,12 +262,9 @@ class RuleComponent extends Object
 		// Merge in invariant conditions and fields
 		$user_model = $this->_controller->Auth->authenticate->name;
 		$id_field = $this->_controller->Auth->authenticate->primaryKey;
-		$email_field = $this->_controller->Auth->authenticate->emailField;
 		$conditions = array_merge(array(
 				'Person.complete' => true,
 				'Person.status' => 'active',
-				"$user_model.$email_field !=" => '',
-				'NOT' => array("$user_model.$email_field" => null),
 		), $conditions);
 
 		$config = new DATABASE_CONFIG;
@@ -271,7 +277,7 @@ class RuleComponent extends Object
 		$joins[$user_model] = array(
 			'table' => "$prefix{$this->_controller->Auth->authenticate->useTable}",
 			'alias' => $user_model,
-			'type' => 'INNER',
+			'type' => 'LEFT',
 			'foreignKey' => false,
 			'conditions' => "$user_model.$id_field = Person.user_id",
 		);

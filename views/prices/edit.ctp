@@ -32,7 +32,7 @@ if (isset ($add)) {
 			'class' => 'mceAdvanced',
 		));
 		echo $this->ZuluruForm->input('cost', array(
-			'after' => $this->Html->para (null, __('Cost of this event, may be 0, <span class="warning-message">not including tax</span>. If you change the price, anyone who has registered for this but not yet paid will still be changed their original registration price, not the new price. If you need to charge them the new price, close this price point (via the "Closes on" field below), make sure that "Allow Late Payment" is disabled, and add a new price point with the new price.', true)),
+			'after' => $this->Html->para (null, __('Cost of this event, may be 0, <span class="warning-message">not including tax</span>. If you change the price, anyone who has registered for this but not yet paid will still be charged their original registration price, not the new price. If you need to charge them the new price, close this price point (via the "Closes on" field below), make sure that "Allow Late Payment" is disabled, and add a new price point with the new price.', true)),
 		));
 		if (Configure::read('payment.tax1_enable')) {
 			echo $this->ZuluruForm->input('tax1', array(
@@ -86,6 +86,7 @@ if (isset ($add)) {
 			'default' => false,
 		));
 		echo $this->ZuluruForm->input('minimum_deposit', array(
+			'default' => 0,
 			'after' => $this->Html->para (null, __('Minimum allowable deposit that the registrant must make, if deposits are enabled above. If fixed deposits are selected, this will be the only allowable deposit amount.', true)),
 		));
 		echo $this->ZuluruForm->input('allow_reservations', array(
@@ -94,6 +95,7 @@ if (isset ($add)) {
 			'default' => false,
 		));
 		echo $this->ZuluruForm->input('reservation_duration', array(
+			'default' => 0,
 			'after' => $this->Html->para (null, __('If enabled above, the time in minutes that a reservation will be held before reverting to "Unpaid" status. One day = 1440 minutes.', true)),
 		));
 	?>
@@ -101,5 +103,5 @@ if (isset ($add)) {
 <?php echo $this->Form->end(__('Submit', true));?>
 </div>
 
-<?php echo $this->ZuluruHtml->script ('datepicker', array('inline' => false)); ?>
+<?php echo $this->ZuluruHtml->script ('datepicker.js', array('inline' => false)); ?>
 <?php if (Configure::read('feature.tiny_mce')) $this->TinyMce->editor('advanced'); ?>

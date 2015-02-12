@@ -242,7 +242,7 @@ class DivisionsController extends AppController {
 
 	function stats() {
 		if (!ini_get('safe_mode')) {
-			set_time_limit(1800);
+			set_time_limit(180);
 		}
 
 		$id = $this->_arg('division');
@@ -287,7 +287,9 @@ class DivisionsController extends AppController {
 					'conditions' => array(
 						'team_id' => $teams,
 					),
+					'contain' => array(),
 			));
+			$sport_obj->_init_stats($stats);
 
 			$division['Person'] = $this->Division->Team->TeamsPerson->find('all', array(
 					'contain' => array('Person', 'Team'),
@@ -440,6 +442,7 @@ class DivisionsController extends AppController {
 
 				Cache::delete('division/' . intval($id) . '/standings', 'long_term');
 				Cache::delete('division/' . intval($id) . '/schedule', 'long_term');
+				Cache::delete('division/' . intval($id) . '/stats', 'long_term');
 				Cache::delete('league/' . $this->Division->league($id) . '/standings', 'long_term');
 				Cache::delete('league/' . $this->Division->league($id) . '/schedule', 'long_term');
 
@@ -1801,10 +1804,10 @@ class DivisionsController extends AppController {
 	 * Ajax functionality
 	 */
 
-	function select($date) {
+	function select($date, $sport = null) {
 		Configure::write ('debug', 0);
 		$this->layout = 'ajax';
-		$this->set('divisions', $this->Division->readByDate($date, $this->_arg('affiliate')));
+		$this->set('divisions', $this->Division->readByDate($date, $this->_arg('affiliate'), $sport));
 	}
 }
 ?>

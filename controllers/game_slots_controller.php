@@ -79,10 +79,14 @@ class GameSlotsController extends AppController {
 
 	function add() {
 		$field = $this->_arg('field');
-		$affiliate = $this->_arg('affiliate');
-		if (!$affiliate && !$field) {
-			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('affiliate', true)), 'default', array('class' => 'info'));
-			$this->redirect('/');
+		if (Configure::read('feature.affiliates')) {
+			$affiliate = $this->_arg('affiliate');
+			if (!$affiliate && !$field) {
+				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('affiliate', true)), 'default', array('class' => 'info'));
+				$this->redirect('/');
+			}
+		} else {
+			$affiliate = 1;
 		}
 
 		if ($field) {
@@ -287,7 +291,7 @@ class GameSlotsController extends AppController {
 		$affiliate = $this->GameSlot->affiliate($id);
 		$this->Configuration->loadAffiliate($affiliate);
 
-		$divisions = $this->GameSlot->Game->Division->readByDate($this->data['GameSlot']['game_date'], $affiliate);
+		$divisions = $this->GameSlot->Game->Division->readByDate($this->data['GameSlot']['game_date'], $affiliate, $this->GameSlot->sport($id));
 		$divisions = Set::combine($divisions, '{n}.Division.id', '{n}.Division.full_league_name');
 		$this->set(compact('affiliate', 'divisions'));
 	}

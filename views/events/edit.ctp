@@ -14,6 +14,12 @@ $collapse = !empty($this->data['Price']['id']);
 	<fieldset>
 		<legend><?php printf(__(isset($add) ? 'Create %s' : 'Edit %s', true), __('Event', true)); ?></legend>
 	<?php
+		if (isset($clone)):
+	?>
+		<p class="warning-message">You are cloning an event that has multiple price points. Cloning currently only supports a single price point. You will need to add any additional price points after saving this event.</p>
+	<?php
+		endif;
+
 		if (!isset ($add)) {
 			echo $this->Form->input('id');
 			if ($collapse) {
@@ -46,7 +52,7 @@ $collapse = !empty($this->data['Price']['id']);
 
 		if ($collapse || isset ($add)) {
 			echo $this->ZuluruForm->input('Price.cost', array(
-				'after' => $this->Html->para (null, __('Cost of this event, may be 0, <span class="warning-message">not including tax</span>. If you change the price, anyone who has registered for this but not yet paid will still be changed their original registration price, not the new price. If you need to charge them the new price, close this price point (via the "Closes on" field below), make sure that "Allow Late Payment" is disabled, and add a new price point with the new price.', true)),
+				'after' => $this->Html->para (null, __('Cost of this event, may be 0, <span class="warning-message">not including tax</span>. If you change the price, anyone who has registered for this but not yet paid will still be charged their original registration price, not the new price. If you need to charge them the new price, close this price point (via the "Closes on" field below), make sure that "Allow Late Payment" is disabled, and add a new price point with the new price.', true)),
 			));
 			if (Configure::read('payment.tax1_enable')) {
 				echo $this->ZuluruForm->input('Price.tax1', array(
@@ -95,6 +101,7 @@ $collapse = !empty($this->data['Price']['id']);
 				'default' => false,
 			));
 			echo $this->ZuluruForm->input('Price.minimum_deposit', array(
+				'default' => 0,
 				'after' => $this->Html->para (null, __('Minimum allowable deposit that the registrant must make, if deposits are enabled above. If fixed deposits are selected, this will be the only allowable deposit amount.', true)),
 			));
 			echo $this->ZuluruForm->input('Price.allow_reservations', array(
@@ -103,6 +110,7 @@ $collapse = !empty($this->data['Price']['id']);
 				'default' => false,
 			));
 			echo $this->ZuluruForm->input('Price.reservation_duration', array(
+				'default' => 0,
 				'after' => $this->Html->para (null, __('If enabled above, the time in minutes that a reservation will be held before reverting to "Unpaid" status. One day = 1440 minutes.', true)),
 			));
 		}
@@ -160,5 +168,5 @@ $collapse = !empty($this->data['Price']['id']);
 </div>
 <?php endif; ?>
 
-<?php echo $this->ZuluruHtml->script ('datepicker', array('inline' => false)); ?>
+<?php echo $this->ZuluruHtml->script ('datepicker.js', array('inline' => false)); ?>
 <?php if (Configure::read('feature.tiny_mce')) $this->TinyMce->editor('advanced'); ?>

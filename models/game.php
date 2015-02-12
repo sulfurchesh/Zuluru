@@ -141,6 +141,15 @@ class Game extends AppModel {
 		),
 	);
 
+	static function compareSportDateAndField ($a, $b) {
+		if ($a['Division']['League']['sport'] < $b['Division']['League']['sport']) {
+			return -1;
+		} else if ($a['Division']['League']['sport'] > $b['Division']['League']['sport']) {
+			return 1;
+		}
+		return Game::compareDateAndField($a, $b);
+	}
+
 	static function compareDateAndField ($a, $b) {
 		// Handle game, team event and task records
 		if (!empty($a['GameSlot']['game_date'])) {
@@ -1387,6 +1396,37 @@ class Game extends AppModel {
 				// At this point, we know that the home team has access to the game slot,
 				// so we will make the division id of the game match that team
 				$data['Game'][$key]['division_id'] = $home_division;
+			}
+
+			// Check for a dependency that has already been resolved
+			foreach (array('home', 'away') as $team) {
+				if (!empty($game["{$team}_dependency_type"])) {
+					switch ($game["{$team}_dependency_type"]) {
+						case 'game_winner':
+							$this->contain();
+							$result = $this->read(null, $game["{$team}_dependency_id"]);
+							if (!empty($result['Game']['home_score'])) {
+								if ($result['Game']['home_score'] >= $result['Game']['away_score']) {
+									$data['Game'][$key]["{$team}_team"] = $result['Game']['home_team'];
+								} else {
+									$data['Game'][$key]["{$team}_team"] = $result['Game']['away_team'];
+								}
+							}
+							break;
+
+						case 'game_loser':
+							$this->contain();
+							$result = $this->read(null, $game["{$team}_dependency_id"]);
+							if (!empty($result['Game']['home_score'])) {
+								if ($result['Game']['home_score'] >= $result['Game']['away_score']) {
+									$data['Game'][$key]["{$team}_team"] = $result['Game']['away_team'];
+								} else {
+									$data['Game'][$key]["{$team}_team"] = $result['Game']['home_team'];
+								}
+							}
+							break;
+					}
+				}
 			}
 
 			$home = ($teams && !empty($data['Game'][$key]['home_team']) ? $teams[$data['Game'][$key]['home_team']] : null);

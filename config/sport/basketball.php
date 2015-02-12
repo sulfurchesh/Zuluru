@@ -7,6 +7,14 @@ $config['sport'] = array(
 	'fields' => Inflector::pluralize($field),
 	'fields_cap' => Inflector::humanize(Inflector::pluralize($field)),
 
+	'start' => array(
+		'stat_sheet' => null,
+		'stat_sheet_direction' => true,
+		'live_score' => null,
+		'box_score' => null,
+		'twitter' => null,
+	),
+
 	'roster_requirements' => array(
 		'womens'=> 8,
 		'mens'	=> 8,
@@ -28,6 +36,10 @@ $config['sport'] = array(
 		'Field goal' => 2,
 		'3 pointer' => 3,
 		'Free throw' => 1,
+	),
+
+	'other_options' => array(
+		// TODO
 	),
 
 	'rating_questions' => false,

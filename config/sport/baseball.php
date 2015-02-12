@@ -7,6 +7,14 @@ $config['sport'] = array(
 	'fields' => Inflector::pluralize($field),
 	'fields_cap' => Inflector::humanize(Inflector::pluralize($field)),
 
+	'start' => array(
+		'stat_sheet' => null,
+		'stat_sheet_direction' => false,
+		'live_score' => null,
+		'box_score' => null,
+		'twitter' => '%s batting',
+	),
+
 	'roster_requirements' => array(
 		'womens'=> 12,
 		'mens'	=> 12,
@@ -31,6 +39,13 @@ $config['sport'] = array(
 
 	'score_options' => array(
 		'Run' => 1,
+	),
+
+	'other_options' => array(
+		'Pitcher' => 'Pitching change',
+		'Fielder' => 'Fielding change',
+		'Batter' => 'Pinch hitter',
+		'Runner' => 'Pinch runner',
 	),
 
 	'rating_questions' => false,

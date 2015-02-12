@@ -752,7 +752,7 @@ class TeamsController extends AppController {
 				if (isset ($member_rule)) {
 					$rule_obj = AppController::_getComponent ('Rule');
 					if (!$rule_obj->init ($member_rule)) {
-						return __('Failed to parse the rule', true);
+						return sprintf (__('Failed to parse the rule: %s', true), $rule_obj->parse_error);
 					}
 					$team['Person'][$key]['is_a_member'] = $rule_obj->evaluate($team['Division']['League']['affiliate_id'], $full_person, $team);
 				} else {
@@ -980,6 +980,7 @@ class TeamsController extends AppController {
 					),
 					'contain' => array(),
 			));
+			$sport_obj->_init_stats($stats);
 			$team['Stat'] = array();
 			foreach ($stats as $stat) {
 				$team['Stat'][] = $stat['Stat'];
@@ -1052,6 +1053,7 @@ class TeamsController extends AppController {
 		if (Configure::read('feature.pdfize') && isset($this->Pdf)) {
 			$this->Pdf->actionsToPdf = array($this->action);
 		}
+		Configure::load("sport/{$team['Division']['League']['sport']}");
 
 		$this->set(compact('team'));
 	}
@@ -1106,7 +1108,9 @@ class TeamsController extends AppController {
 			}
 
 			if ($this->Team->save($this->data)) {
-				$this->Session->setFlash(sprintf(__('The %s has been saved, but will not be visible until approved', true), __('team', true)), 'default', array('class' => 'success'));
+				if (!$this->is_admin) {
+					$this->Session->setFlash(sprintf(__('The %s has been saved, but will not be visible until approved', true), __('team', true)), 'default', array('class' => 'success'));
+				}
 				$this->redirect(array('action' => 'index'));
 			} else {
 				$this->Session->setFlash(sprintf(__('The %s could not be saved. Please correct the errors below and try again.', true), __('team', true)), 'default', array('class' => 'warning'));
@@ -2608,17 +2612,21 @@ class TeamsController extends AppController {
 			if (empty ($person['Person']['TeamsPerson'])) {
 				switch ($status) {
 					case ROSTER_APPROVED:
-						return $this->_sendAdd($person, $team, $role);
+						$this->_sendAdd($person, $team, $role);
+						break;
 
 					case ROSTER_INVITED;
-						return $this->_sendInvite($person, $team, $role);
+						$this->_sendInvite($person, $team, $role);
+						break;
 
 					case ROSTER_REQUESTED:
-						return $this->_sendRequest($person, $team, $role);
+						$this->_sendRequest($person, $team, $role);
+						break;
 				}
 			} else {
-				return $this->_sendChange($person, $team, $role);
+				$this->_sendChange($person, $team, $role);
 			}
+			return true;
 		} else {
 			$this->Session->setFlash(__('Failed to set player to that state.', true), 'default', array('class' => 'warning'));
 			return false;
@@ -2641,7 +2649,7 @@ class TeamsController extends AppController {
 			if (!isset($this->can_add_rule_obj)) {
 				$this->can_add_rule_obj = AppController::_getComponent ('Rule', '', $this, true);
 				if (!$this->can_add_rule_obj->init ($team['Division']['roster_rule'])) {
-					return __('Failed to parse the rule', true);
+					return sprintf (__('Failed to parse the rule: %s', true), $this->can_add_rule_obj->parse_error);
 				}
 			}
 
@@ -3134,7 +3142,6 @@ class TeamsController extends AppController {
 		$code = $this->_hash($roster);
 		if (!empty($division)) {
 			$league = $division['League'];
-			// TODO: Does this work when we have multiple sports?
 			Configure::load("sport/{$league['sport']}");
 		}
 		$this->set(compact('person', 'team', 'division', 'league', 'roster', 'code'));

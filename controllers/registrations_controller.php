@@ -149,6 +149,8 @@ class RegistrationsController extends AppController {
 			);
 			if (!empty($event['Division']['League']['sport'])) {
 				$contain['Person']['Skill'] = array('conditions' => array('Skill.sport' => $event['Division']['League']['sport']));
+			} else if (count(Configure::read('options.sport')) == 1) {
+				$contain['Person']['Skill'] = array('conditions' => array('Skill.sport' => Configure::read('options.sport')));
 			}
 			$this->Registration->contain($contain);
 			$this->set('registrations', $this->Registration->find ('all', array(
@@ -779,9 +781,12 @@ class RegistrationsController extends AppController {
 			if (!$registration['Price']['allow_late_payment'] && time() > strtotime($registration['Price']['close']) + Configure::read('timezone.adjust') * 60) {
 				$now = date('Y-m-d H:i:s', time() - Configure::read('timezone.adjust') * 60);
 				$other_prices = Set::extract("/Price[close>$now]", $registration['Event']);
-				$other[] = array_merge($registration, array('reason' => __('Payment deadline has passed', true), 'change_price' => !empty($other_prices)));
-				unset ($registrations[$key]);
-				continue;
+				$prereg = Set::extract("/Preregistration[event_id={$registration['Registration']['event_id']}]/.", $this->UserCache->read('Preregistrations'));
+				if (!empty($other_prices) || empty($prereg)) {
+					$other[] = array_merge($registration, array('reason' => __('Payment deadline has passed', true), 'change_price' => !empty($other_prices)));
+					unset ($registrations[$key]);
+					continue;
+				}
 			}
 
 			// Find the registration cap and how many are already registered.

@@ -36,7 +36,6 @@ class FieldsController extends AppController {
 					'open',
 					'close',
 					'delete',
-					'bookings',
 			)))
 			{
 				// If a field id is specified, check if we're a manager of that field's affiliate
@@ -133,7 +132,7 @@ class FieldsController extends AppController {
 				$this->Session->setFlash(sprintf(__('Invalid %s', true), __('facility', true)), 'default', array('class' => 'info'));
 				$this->redirect(array('controller' => 'facilities', 'action' => 'index'));
 			}
-			$this->data['Field'] = array('facility_id' => $id);
+			$this->data['Field'] = array('facility_id' => $id, 'sport' => $this->data['Facility']['sport']);
 			$this->Configuration->loadAffiliate($this->data['Region']['affiliate_id']);
 		}
 		$this->set('add', true);
@@ -217,8 +216,24 @@ class FieldsController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __(Configure::read('ui.field'), true)), 'default', array('class' => 'info'));
 			$this->redirect(array('controller' => 'facilities', 'action' => 'index'));
 		}
-		// TODO: Is there a better condition to use? Some divisions wrap around a year boundary.
-		// Maybe get the Availability table involved?
+
+		if ($this->is_manager) {
+			$this->is_manager = in_array($this->Field->affiliate($id), $this->UserCache->read('ManagedAffiliateIDs'));
+		}
+		if ($this->is_admin || $this->is_manager) {
+			$conditions = array('OR' => array(
+				'is_open' => true,
+				'open >=' => date('Y-m-d'),
+			));
+		} else {
+			$conditions = array('is_open' => true);
+		}
+		$min_date = $this->Field->GameSlot->Game->Division->field('MIN(open)', $conditions);
+		$slot_conditions = array('GameSlot.game_date >=' => $min_date);
+		if (!$this->is_admin && !$this->is_manager) {
+			$max_date = $this->Field->GameSlot->Game->Division->field('MAX(close)', $conditions);
+			$slot_conditions['GameSlot.game_date <='] = $max_date;
+		}
 		$this->Field->contain (array (
 			'Facility' => 'Region',
 			'GameSlot' => array(
@@ -231,8 +246,9 @@ class FieldsController extends AppController {
 					),
 					'Division' => array('League', 'Day'),
 				),
+				'DivisionGameslotAvailability' => array('Division' => 'League'),
 				'order' => 'GameSlot.game_date, GameSlot.game_start',
-				'conditions' => 'YEAR(GameSlot.game_date) >= YEAR(NOW())',
+				'conditions' => $slot_conditions,
 			),
 		));
 

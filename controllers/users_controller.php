@@ -91,7 +91,7 @@ class UsersController extends AppController {
 		}
 
 		$this->_loadAddressOptions();
-		$this->_loadGroupOptions();
+		$groups = $this->_loadGroupOptions();
 		$this->_loadAffiliateOptions();
 		$user_model = $this->Auth->authenticate->name;
 
@@ -162,24 +162,24 @@ class UsersController extends AppController {
 				$person_transaction = new DatabaseTransaction($this->Person);
 
 				if ($this->Auth->authenticate->save($this->data)) {
-					$approved = false;
-
 					// Tweak some data to be saved
 					$this->data['Person'][0]['user_id'] = $this->Auth->authenticate->id;
 					foreach ($this->data['Person'] as $key => $person) {
 						$person['complete'] = true;
 
-						if (Configure::read('feature.auto_approve')) {
+						if ($this->is_admin) {
+							if ($key != 0) {
+								$person['status'] = $this->data['Person'][0]['status'];
+							}
+						} else if (Configure::read('feature.auto_approve')) {
 							if ($key == 0) {
 								// Check the requested groups and do not auto-approve above a certain level
 								$invalid_groups = Set::extract('/Group[level>1]', $selected_groups);
 								if (empty($invalid_groups)) {
 									$person['status'] = 'active';
-									$approved = true;
 								}
 							} else {
 								$person['status'] = 'active';
-								$approved = true;
 							}
 						}
 
@@ -252,6 +252,9 @@ class UsersController extends AppController {
 					$this->redirect('/');
 				}
 			}
+		} else {
+			// By default, select the first group
+			$this->data = array('Group' => array('Group' => array(current(array_keys($groups)))));
 		}
 	}
 
@@ -628,6 +631,10 @@ class UsersController extends AppController {
 							break;
 
 						case 1:
+							if (empty($matches[0]['Person']['email'])) {
+								$this->Session->setFlash(__('This account has no email address associated with it. Please contact an administrator to assist you.', true), 'default', array('class' => 'success'));
+								$this->redirect('/');
+							}
 							if ($this->_email_reset_code($matches[0]['Person'])) {
 								$this->Session->setFlash(__('Your reset code has been emailed to you.', true), 'default', array('class' => 'success'));
 								$this->redirect('/');
