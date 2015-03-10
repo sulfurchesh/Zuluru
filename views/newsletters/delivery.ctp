@@ -6,18 +6,23 @@ $this->Html->addCrumb (__('Delivery Report', true));
 
 <div class="newsletters view">
 <h2><?php  echo __('Delivery Report', true) . ': ' . $newsletter['Newsletter']['name'];?></h2>
+<p><?php printf(__('This newsletter has been delivered to %d people. Click letters below to see recipients whose last name start with that letter.', true), count($newsletter['Delivery'])); ?></p>
 <?php
-echo 'This newsletter has been delivered to ' . count($newsletter['Delivery']) . ' people. Click letters below to see recipients whose last name start with that letter.';
 usort($people, 'compareName');
 AppModel::_reindexOuter($people, 'Person', 'id');
 AppModel::_reindexOuter($newsletter['Delivery'], null, 'person_id');
+
+$letters = array();
+foreach ($people as $person) {
+	$letters[up($person['Person']['last_name'][0])] = true;
+}
 
 function compareName($a, $b) {
 	return up("{$a['Person']['last_name']} {$a['Person']['first_name']}") > up("{$b['Person']['last_name']} {$b['Person']['first_name']}");
 }
 ?>
 
-<p><?php foreach (range('A', 'Z') as $letter): ?>
+<p><?php foreach (array_keys($letters) as $letter): ?>
 	<a href="#" class="letter_link" id="letter_<?php echo $letter; ?>"><?php echo $letter; ?></a>
 <?php endforeach; ?>
 </p>

@@ -685,6 +685,13 @@ class ZuluruSchema extends CakeSchema {
 		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'game' => array('column' => 'game_id', 'unique' => 0), 'team' => array('column' => array('team_id', 'game_id'), 'unique' => 0)),
 		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
 	);
+	var $sessions = array(
+		'id' => array('type' => 'string', 'null' => false, 'key' => 'primary'),
+		'data' => array('type' => 'text', 'null' => true, 'default' => NULL),
+		'expires' => array('type' => 'integer', 'null' => true, 'default' => NULL),
+		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1)),
+		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
+	);
 	var $settings = array(
 		'id' => array('type' => 'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
 		'affiliate_id' => array('type' => 'integer', 'null' => true, 'default' => NULL),
@@ -725,7 +732,7 @@ class ZuluruSchema extends CakeSchema {
 		'q10' => array('type' => 'integer', 'null' => false, 'default' => '0'),
 		'comments' => array('type' => 'text', 'null' => true, 'default' => NULL),
 		'highlights' => array('type' => 'text', 'null' => true, 'default' => NULL),
-		'most_spirited' => array('type' => 'integer', 'null' => false, 'default' => '0'),
+		'most_spirited' => array('type' => 'integer', 'null' => true, 'default' => null),
 		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1), 'team' => array('column' => array('team_id', 'game_id'), 'unique' => 0), 'created' => array('column' => array('created_team_id', 'game_id'), 'unique' => 0)),
 		'tableParameters' => array('charset' => 'utf8', 'collate' => 'utf8_general_ci', 'engine' => 'InnoDB')
 	);
