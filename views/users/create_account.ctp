@@ -40,8 +40,10 @@ if (Configure::read('feature.antispam')):
 	</div>
 <?php endif; ?>
 
+<?php if (count($groups) > 1): ?>
 	<fieldset>
 		<legend><?php __('Account Type'); ?></legend>
+<?php endif; ?>
 	<?php
 		echo $this->ZuluruForm->input('Group.Group', array(
 			'label' => __('Select all roles that apply to you.', true) . ' ' . __('You will be able to change these later, if required.', true),
@@ -62,7 +64,10 @@ if (Configure::read('feature.antispam')):
 			));
 		}
 	?>
+<?php if (count($groups) > 1): ?>
 	</fieldset>
+<?php endif; ?>
+
 	<fieldset>
 		<legend><?php __('Your Information'); ?></legend>
 		<div style="float:left;">
@@ -180,11 +185,15 @@ if (Configure::read('feature.antispam')):
 	<fieldset>
 		<legend><?php __('Online Contact'); ?></legend>
 	<?php
-		echo $this->ZuluruForm->input($email_field);
+		echo $this->ZuluruForm->input($email_field, array(
+			'label' => __('Email', true),
+		));
 		echo $this->ZuluruForm->input('Person.0.publish_email', array(
 			'label' => __('Allow other people to view my email address', true),
 		));
-		echo $this->ZuluruForm->input('Person.0.alternate_email');
+		echo $this->ZuluruForm->input('Person.0.alternate_email', array(
+			'after' => $this->Html->para (null, __('Optional second email address.', true)),
+		));
 		echo $this->ZuluruForm->input('Person.0.publish_alternate_email', array(
 			'label' => __('Allow other people to view my alternate email address', true),
 		));
@@ -401,7 +410,10 @@ $this->Js->get("#GroupGroup$coach")->event('change', 'coachChanged();');
 echo $this->Html->scriptBlock("
 function playerChanged() {
 	var checked = jQuery('#GroupGroup$player').prop('checked');
-	if (checked) {
+	// Player is always a valid option. If it doesn't exist, it's because the entire group
+	// input is hidden, which is because player is the only option.
+	var type = jQuery('#GroupGroup$player').attr('type');
+	if (checked || type == undefined) {
 		jQuery('.player').css('display', '');
 		jQuery('.player input, .player select').removeAttr('disabled');
 	} else {

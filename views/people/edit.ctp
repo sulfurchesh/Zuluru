@@ -279,7 +279,9 @@ echo $is_me ? __('Edit Your Profile', true) : (array_key_exists('first_name', $t
 		echo $this->ZuluruForm->input('publish_email', array(
 			'label' => __('Allow other people to view my email address', true),
 		));
-		echo $this->ZuluruForm->input('alternate_email');
+		echo $this->ZuluruForm->input('alternate_email', array(
+			'after' => $this->Html->para (null, __('Optional second email address.', true)),
+		));
 		echo $this->ZuluruForm->input('publish_alternate_email', array(
 			'label' => __('Allow other people to view my alternate email address', true),
 		));
@@ -524,7 +526,10 @@ $this->Js->get("#GroupGroup$coach")->event('change', 'coachChanged();');
 echo $this->Html->scriptBlock("
 function playerChanged() {
 	var checked = jQuery('#GroupGroup$player').prop('checked');
-	if (checked) {
+	// Player is always a valid option. If it doesn't exist, it's because the entire group
+	// input is hidden, which is because player is the only option.
+	var type = jQuery('#GroupGroup$player').attr('type');
+	if (checked || type == undefined) {
 		jQuery('.player').css('display', '');
 		jQuery('.player input, .player select').not('.disabled').removeAttr('disabled');
 	} else {
