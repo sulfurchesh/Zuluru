@@ -1,0 +1,89 @@
+﻿Merge remote-tracking branch 'upstream/master'
+
+Conflicts:
+	config/features.php
+	views/elements/leagues/standings/rounds/heading.ctp
+#
+# It looks like you may be committing a merge.
+# If this is not correct, please remove the file
+#	.git/MERGE_HEAD
+# and try again.
+
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# All conflicts fixed but you are still merging.
+#   (use "git commit" to conclude merge)
+#
+# Changes to be committed:
+#
+#	modified:   app_controller.php
+#	modified:   app_model.php
+#	modified:   config/features.php
+#	modified:   config/options.php
+#	modified:   config/schema/data/settings_data.php
+#	new file:   config/schema/migrations/schema71.php
+#	modified:   config/schema/schema.php
+#	modified:   config/version.php
+#	modified:   controllers/components/event_type.php
+#	modified:   controllers/components/event_type_individual.php
+#	modified:   controllers/components/league_type.php
+#	modified:   controllers/components/league_type_tournament.php
+#	modified:   controllers/components/rule_format_date.php
+#	new file:   controllers/components/spirit_suzuki.php
+#	new file:   controllers/components/spirit_wfdf2.php
+#	modified:   controllers/components/user_cache.php
+#	modified:   controllers/games_controller.php
+#	modified:   controllers/leagues_controller.php
+#	modified:   controllers/people_controller.php
+#	modified:   controllers/registrations_controller.php
+#	modified:   controllers/team_events_controller.php
+#	modified:   controllers/teams_controller.php
+#	modified:   models/game.php
+#	modified:   models/league.php
+#	modified:   models/score_entry.php
+#	modified:   plugins/install/controllers/install_controller.php
+#	modified:   plugins/install/views/install/finish.ctp
+#	modified:   plugins/install/views/install/update.ctp
+#	modified:   views/all/splash.ctp
+#	modified:   views/elements/help/settings/feature/twitter.ctp
+#	modified:   views/elements/leagues/standings/ladder/heading.ctp
+#	modified:   views/elements/leagues/standings/ladder/more.ctp
+#	modified:   views/elements/leagues/standings/ladder/team.ctp
+#	modified:   views/elements/leagues/standings/rounds/heading.ctp
+#	modified:   views/elements/leagues/standings/rounds/more.ctp
+#	modified:   views/elements/leagues/standings/rounds/team.ctp
+#	modified:   views/elements/payments/forms/paypal.ctp
+#	modified:   views/elements/people/confirmation.ctp
+#	modified:   views/elements/people/search_results.ctp
+#	modified:   views/elements/people/skill_edit.ctp
+#	modified:   views/elements/questionnaires/view.ctp
+#	modified:   views/elements/questions/input.ctp
+#	modified:   views/elements/registrations/relative_notice.ctp
+#	modified:   views/elements/teams/actions.ctp
+#	modified:   views/games/edit.ctp
+#	modified:   views/games/note.ctp
+#	modified:   views/games/submit_score.ctp
+#	modified:   views/games/view.ctp
+#	modified:   views/helpers/zuluru_game.php
+#	modified:   views/leagues/csv/participation.ctp
+#	modified:   views/leagues/edit.ctp
+#	modified:   views/leagues/summary.ctp
+#	modified:   views/leagues/view.ctp
+#	modified:   views/people/approve.ctp
+#	modified:   views/people/edit.ctp
+#	modified:   views/people/note.ctp
+#	modified:   views/people/tooltip.ctp
+#	modified:   views/people/view.ctp
+#	modified:   views/registrations/payment.ctp
+#	modified:   views/registrations/summary.ctp
+#	modified:   views/settings/profile.ctp
+#	modified:   views/settings/scoring.ctp
+#	new file:   views/teams/csv/view.ctp
+#	modified:   views/teams/note.ctp
+#	modified:   views/teams/tooltip.ctp
+#	modified:   views/teams/view.ctp
+#	modified:   views/users/create_account.ctp
+#
+

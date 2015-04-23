@@ -135,10 +135,12 @@ class AppController extends Controller {
 		// We will allow them to see help or logout. Or get the leagues list, as that's where some things redirect to.
 		$free = $this->freeActions();
 		if ($this->is_logged_in && !in_array($this->action, $free)) {
-			$email = $this->UserCache->read('Person.email');
-			if (($this->name != 'People' || $this->action != 'edit') && empty ($email) && $this->UserCache->read('Person.user_id')) {
-				$this->Session->setFlash(__('Last time we tried to contact you, your email bounced. We require a valid email address as part of your profile. You must update it before proceeding.', true), 'default', array('class' => 'warning'));
-				$this->redirect (array('controller' => 'people', 'action' => 'edit'));
+			if (($this->name != 'People' || $this->action != 'edit') && $this->UserCache->read('Person.user_id')) {
+				$email = $this->UserCache->read('Person.email');
+				if (empty ($email)) {
+					$this->Session->setFlash(__('Last time we tried to contact you, your email bounced. We require a valid email address as part of your profile. You must update it before proceeding.', true), 'default', array('class' => 'warning'));
+					$this->redirect (array('controller' => 'people', 'action' => 'edit'));
+				}
 			}
 
 			if (($this->name != 'People' || $this->action != 'edit') && $this->UserCache->read('Person.complete') == 0) {
@@ -345,6 +347,7 @@ class AppController extends Controller {
 		}
 		$groups = $this->Group->find('all', array(
 			'conditions' => $conditions,
+			'contain' => array(),
 			'order' => array('Group.level', 'Group.id'),
 		));
 		$group_list = array();
@@ -678,14 +681,10 @@ class AppController extends Controller {
 	 * Put basic items on the menu, some based on configuration settings.
 	 * Other items like specific teams and divisions are added elsewhere.
 	 */
-	function _initMenu()
-	{
+	function _initMenu() {
 		// Initialize the menu
 		$this->menu_items = array();
 
-		if ($this->is_manager) {
-			$affiliates = $this->_applicableAffiliates(true);
-		}
 		$groups = $this->UserCache->read('GroupIDs');
 
 		if ($this->is_logged_in) {
@@ -710,56 +709,9 @@ class AppController extends Controller {
 
 		// Depending on the account type, and the available registrations, this may not be available
 		// Admins and managers, anyone not logged in, and anyone with any registration history always get it
-		$show_registration = false;
 		if (Configure::read('feature.registration')) {
-			$show_registration = $this->is_admin || $this->is_manager || !$this->is_logged_in;
-			$registrations = $this->UserCache->read('Registrations');
-			if (!$show_registration && !empty($registrations)) {
-				$show_registration = true;
-			}
-
-			// Parents and players always get it
-			if (!$show_registration) {
-				$always = array_intersect($groups, array(GROUP_PLAYER,GROUP_PARENT));
-				if (!empty($always)) {
-					$show_registration = true;
-				}
-			}
-
-			// If there are any generic events available, everyone gets it
-			if (!$show_registration) {
-				$affiliates = $this->_applicableAffiliateIDs();
-				if ($this->Person->Registration->Event->find('count', array(
-						'contain' => 'EventType',
-						'conditions' => array(
-							'EventType.type' => 'generic',
-							"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
-							"Event.close > CURDATE()",
-							'Event.affiliate_id' => $affiliates,
-						),
-				)) > 0)
-				{
-					$show_registration = true;
-				}
-			}
-
-			// If there are any team events available, coaches get it
-			if (!$show_registration && in_array(GROUP_COACH, $groups)) {
-				if ($this->Person->Registration->Event->find('count', array(
-						'contain' => 'EventType',
-						'conditions' => array(
-							'EventType.type' => 'team',
-							"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
-							"Event.close > CURDATE()",
-							'Event.affiliate_id' => $affiliates,
-						),
-				)) > 0)
-				{
-					$show_registration = true;
-				}
-			}
-
-			if ($show_registration) {
+			// Parents always get the registration menu items
+			if (in_array(GROUP_PARENT, $groups) || $this->_showRegistration(null, $groups)) {
 				$this->_addMenuItem(__('Registration', true), array('controller' => 'events', 'action' => 'wizard'));
 				$this->_addMenuItem(__('Wizard', true), array('controller' => 'events', 'action' => 'wizard'), __('Registration', true));
 				$this->_addMenuItem(__('All events', true), array('controller' => 'events', 'action' => 'index'), __('Registration', true));
@@ -830,6 +782,8 @@ class AppController extends Controller {
 		$this->_addMenuItem(__('List', true), array('controller' => 'facilities', 'action' => 'index'), __(Configure::read('ui.fields_cap'), true));
 		$this->_addMenuItem(sprintf(__('Map of all %s', true), __(Configure::read('ui.fields'), true)), array('controller' => 'maps', 'action' => 'index'), __(Configure::read('ui.fields_cap'), true), null, array('target' => 'map'));
 		if ($this->is_admin || $this->is_manager) {
+			$affiliates = $this->_applicableAffiliates(true);
+
 			$this->_addMenuItem(__('Regions', true), array('controller' => 'regions', 'action' => 'index'), __(Configure::read('ui.fields_cap'), true));
 			$this->_addMenuItem(__('List', true), array('controller' => 'regions', 'action' => 'index'), array(__(Configure::read('ui.fields_cap'), true), __('Regions', true)));
 			$this->_addMenuItem(sprintf(__('Create %s', true), __('region', true)), array('controller' => 'regions', 'action' => 'add'), array(__(Configure::read('ui.fields_cap'), true), __('Regions', true)));
@@ -1343,6 +1297,54 @@ class AppController extends Controller {
 			$this->_addMenuItem(sprintf(__('Edit %s', true), __(Configure::read('ui.field_cap'), true)), array('controller' => 'fields', 'action' => 'edit', 'field' => $field['Field']['id']), array(__(Configure::read('ui.fields_cap'), true), $field['Field']['long_name']));
 			$this->_addMenuItem(__('Edit Layout', true), array('controller' => 'maps', 'action' => 'edit', 'field' => $field['Field']['id']), array(__(Configure::read('ui.fields_cap'), true), $field['Field']['long_name']));
 		}
+	}
+
+	function _showRegistration($id, $groups = null) {
+		$registrations = $this->UserCache->read('Registrations', $id);
+		if ($this->is_admin || $this->is_manager || !$this->is_logged_in || !empty($registrations)) {
+			return true;
+		}
+
+		// Players always get it
+		if ($groups === null) {
+			$groups = $this->UserCache->read('GroupIDs', $id);
+		}
+		if (in_array(GROUP_PLAYER, $groups)) {
+			return true;
+		}
+
+		// If there are any generic events available, everyone gets it
+		$affiliates = $this->_applicableAffiliateIDs();
+		if ($this->Person->Registration->Event->find('count', array(
+				'contain' => 'EventType',
+				'conditions' => array(
+					'EventType.type' => 'generic',
+					"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
+					"Event.close > CURDATE()",
+					'Event.affiliate_id' => $affiliates,
+				),
+		)) > 0)
+		{
+			return true;
+		}
+
+		// If there are any team events available, coaches get it
+		if (in_array(GROUP_COACH, $groups)) {
+			if ($this->Person->Registration->Event->find('count', array(
+					'contain' => 'EventType',
+					'conditions' => array(
+						'EventType.type' => 'team',
+						"Event.open < DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
+						"Event.close > CURDATE()",
+						'Event.affiliate_id' => $affiliates,
+					),
+			)) > 0)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

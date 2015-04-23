@@ -40,14 +40,21 @@ $config['options'] = array(
 	),
 
 	'access_required' => array(
-		'1'					=> __('User can update', true),
-		'2'					=> __('Admin can update', true),
+		PROFILE_USER_UPDATE	=> __('User can update', true),
+		PROFILE_ADMIN_UPDATE=> __('Admin can update', true),
 	),
 
 	'access_optional' => array(
-		'1'					=> __('User can update', true),
-		'2'					=> __('Admin can update', true),
-		'0'					=> __('Disabled entirely', true),
+		PROFILE_USER_UPDATE	=> __('User can update', true),
+		PROFILE_ADMIN_UPDATE=> __('Admin can update', true),
+		PROFILE_DISABLED	=> __('Disabled entirely', true),
+	),
+
+	'access_registration' => array(
+		PROFILE_USER_UPDATE	=> __('User can update', true),
+		PROFILE_ADMIN_UPDATE=> __('Admin can update', true),
+		PROFILE_REGISTRATION=> __('Updated during event registration', true),
+		PROFILE_DISABLED	=> __('Disabled entirely', true),
 	),
 
 	'gender'				=> make_options(array(
@@ -112,6 +119,17 @@ $config['options'] = array(
 		TIE_BREAKER_PM_GF_HTH => __('Plus-minus > Goals for > Head-to-head', true),
 	),
 
+	'tie_breaker_carbon'	=> array(
+		TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS => __('Carbon flip > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS => __('Head-to-head > Head-to-head plus-minus > Carbon flip > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Carbon flip > Losses', true),
+		TIE_BREAKER_PM_HTH_GF_LOSS => __('Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_CF_PM_HTH_GF_LOSS => __('Carbon flip > Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_CF_HTH_GF_LOSS => __('Plus-minus > Carbon flip > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_HTH_CF_GF_LOSS => __('Plus-minus > Head-to-head > Carbon flip > Goals for > Losses', true),
+	),
+
 	'tie_breaker_spirit'	=> array(
 		TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
 		TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS_SPIRIT => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses > Spirit', true),
@@ -120,6 +138,33 @@ $config['options'] = array(
 		TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT => __('Plus-minus > Head-to-head > Goals for > Losses > Spirit', true),
 		TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS => __('Spirit > Plus-minus > Head-to-head > Goals for > Losses', true),
 		TIE_BREAKER_PM_GF_HTH => __('Plus-minus > Goals for > Head-to-head', true),
+	),
+
+	'tie_breaker_spirit_carbon' => array(
+		TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS_SPIRIT => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_HTH_HTHPM_PM_GF_LOSS => __('Spirit > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS => __('Carbon flip > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS_SPIRIT => __('Carbon flip > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_CF_SPIRIT_HTH_HTHPM_PM_GF_LOSS => __('Carbon flip > Spirit > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS => __('Head-to-head > Head-to-head plus-minus > Carbon flip > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS_SPIRIT => __('Head-to-head > Head-to-head plus-minus > Carbon flip > Plus-minus > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_HTH_HTHPM_CF_PM_GF_LOSS => __('Spirit > Head-to-head > Head-to-head plus-minus > Carbon flip > Plus-minus > Goals for > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Carbon flip > Losses', true),
+		TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS_SPIRIT => __('Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Carbon flip > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_HTH_HTHPM_PM_GF_CF_LOSS => __('Spirit > Head-to-head > Head-to-head plus-minus > Plus-minus > Goals for > Carbon flip > Losses', true),
+		TIE_BREAKER_PM_HTH_GF_LOSS => __('Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT => __('Plus-minus > Head-to-head > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS => __('Spirit > Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_CF_PM_HTH_GF_LOSS => __('Carbon flip > Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_CF_PM_HTH_GF_LOSS_SPIRIT => __('Carbon flip > Plus-minus > Head-to-head > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_CF_PM_HTH_GF_LOSS => __('Spirit > Carbon flip > Plus-minus > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_CF_HTH_GF_LOSS => __('Plus-minus > Carbon flip > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_CF_HTH_GF_LOSS_SPIRIT => __('Plus-minus > Carbon flip > Head-to-head > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_PM_CF_HTH_GF_LOSS => __('Spirit > Plus-minus > Carbon flip > Head-to-head > Goals for > Losses', true),
+		TIE_BREAKER_PM_HTH_CF_GF_LOSS => __('Plus-minus > Head-to-head > Carbon flip > Goals for > Losses', true),
+		TIE_BREAKER_PM_HTH_CF_GF_LOSS_SPIRIT => __('Plus-minus > Head-to-head > Carbon flip > Goals for > Losses > Spirit', true),
+		TIE_BREAKER_SPIRIT_PM_HTH_CF_GF_LOSS => __('Spirit > Plus-minus > Head-to-head > Carbon flip > Goals for > Losses', true),
 	),
 
 	'allstar'				=> make_options(array(
@@ -377,10 +422,12 @@ $config['options'] = array(
 	'spirit_questions' => array(
 		'none' => __('No spirit questionnaire', true),
 		'wfdf' => __('WFDF standard', true),
+		'wfdf2' => __('WFDF standard 2014 version', true),
 		'modified_wfdf' => __('Modified WFDF', true),
 		'modified_bula' => __('Modified BULA', true),
 		'team' => __('Leaguerunner original', true),
 		'ocua_team' => __('Modified Leaguerunner', true),
+		'suzuki' => __('Sushi Suzuki\'s Alternate', true),
 	),
 
 	// List of available payment providers

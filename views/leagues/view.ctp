@@ -53,6 +53,13 @@ $collapse = (count($league['Division']) == 1);
 
 			</dd>
 		<?php endif; ?>
+		<?php if (Configure::read('scoring.carbon_flip')): ?>
+			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Carbon Flip'); ?></dt>
+			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
+				<?php $league['League']['carbon_flip'] ? __('Yes') : __('No'); ?>
+
+			</dd>
+		<?php endif; ?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Expected Max Score'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
 				<?php echo $league['League']['expected_max_score']; ?>
@@ -68,7 +75,7 @@ $collapse = (count($league['Division']) == 1);
 		<?php endif; ?>
 			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Tie Breaker'); ?></dt>
 			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php echo Configure::read("options.tie_breaker_spirit.{$league['League']['tie_breaker']}"); ?>
+				<?php echo Configure::read("options.tie_breaker_spirit_carbon.{$league['League']['tie_breaker']}"); ?>
 
 			</dd>
 		<?php

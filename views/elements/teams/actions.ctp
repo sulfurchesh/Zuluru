@@ -102,13 +102,7 @@ if ($is_admin || $is_manager) {
 		array('confirm' => sprintf(__('Are you sure you want to delete # %s?', true), $team['id'])));
 }
 if ($is_logged_in && Configure::read('feature.annotations')) {
-	if (!empty($team['Note'])) {
-		$links[] = $this->Html->link(__('Delete Note', true), array('controller' => 'teams', 'action' => 'delete_note', 'team' => $team['id'], 'return' => true));
-		$link = __('Edit Note', true);
-	} else {
-		$link = __('Add Note', true);
-	}
-	$links[] = $this->Html->link($link, array('controller' => 'teams', 'action' => 'note', 'team' => $team['id'], 'return' => true));
+	$links[] = $this->Html->link(__('Add Note', true), array('controller' => 'teams', 'action' => 'note', 'team' => $team['id']));
 }
 
 if (!empty($extra)) {

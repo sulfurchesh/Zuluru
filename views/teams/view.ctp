@@ -192,22 +192,68 @@ if (!empty($team['Team']['short_name'])) {
 
 		</dd>
 		<?php endif; ?>
-		<?php if (!empty($team['Note'])): ?>
-			<dt<?php if ($i % 2 == 0) echo $class;?>><?php __('Private Note'); ?></dt>
-			<dd<?php if ($i++ % 2 == 0) echo $class;?>>
-				<?php echo $team['Note'][0]['note']; ?>
-
-			</dd>
-		<?php endif; ?>
 	</dl>
+<?php if (!empty($team['Note'])): ?>
+	<fieldset>
+		<legend><?php __('Notes'); ?></legend>
+		<table class="list">
+		<tr>
+			<th><?php __('From'); ?></th>
+			<th><?php __('Note'); ?></th>
+			<th><?php __('Visibility'); ?></th>
+			<th class="actions"><?php __('Actions');?></th>
+		</tr>
+		<?php
+			$i = 0;
+			foreach ($team['Note'] as $note):
+				$class = null;
+				if ($i++ % 2 == 0) {
+					$class = ' class="altrow"';
+				}
+			?>
+			<tr<?php echo $class;?>>
+				<td><?php
+				echo $this->element('people/block', array('person' => $note['CreatedPerson']));
+				echo $this->Html->tag('br');
+				echo $this->ZuluruTime->datetime($note['created']); ?></td>
+				<td><?php echo $note['note']; ?></td>
+				<td><?php __(Configure::read("visibility.{$note['visibility']}")); ?></td>
+				<td class="actions">
+					<?php
+					if ($note['created_person_id'] == $my_id) {
+						echo $this->ZuluruHtml->iconLink('edit_24.png',
+								array('action' => 'note', 'note' => $note['id']),
+								array('alt' => __('Edit Note', true), 'title' => __('Edit Note', true))
+						);
+					}
+					// Admins and coordinators are the only ones that can see those notes (loaded or
+					// not based on conditions in the controller), and they can delete them too.
+					if ($note['created_person_id'] == $my_id || in_array($note['visibility'], array(VISIBILITY_ADMIN, VISIBILITY_COORDINATOR))) {
+						echo $this->ZuluruHtml->iconLink('delete_24.png',
+								array('action' => 'delete_note', 'note' => $note['id']),
+								array('alt' => __('Delete Note', true), 'title' => __('Delete Note', true)),
+								array(),
+								__('Are you sure you want to delete this note?', true)
+						);
+					}
+					?>
+				</td>
+			</tr>
+		<?php endforeach; ?>
+		</table>
+	</fieldset>
+<?php endif; ?>
 </div>
 <div class="actions">
 	<?php
 	$extra = array();
-	if (($is_admin || $is_manager || $is_coordinator || $is_captain) && Configure::read('scoring.stat_tracking') && League::hasStats($team['Division']['League'])) {
-		$extra[] = $this->ZuluruHtml->iconLink('pdf_32.png',
-				array('action' => 'stat_sheet', 'team' => $team['Team']['id']),
-				array('alt' => __('Stat Sheet', true), 'title' => __('Stat Sheet', true)));
+	if ($is_admin || $is_manager || $is_coordinator || $is_captain) {
+		$extra[] = $this->Html->link(__('Download', true), array('action' => 'view', 'team' => $team['Team']['id'], 'ext' => 'csv'));
+		if (Configure::read('scoring.stat_tracking') && League::hasStats($team['Division']['League'])) {
+			$extra[] = $this->ZuluruHtml->iconLink('pdf_32.png',
+					array('action' => 'stat_sheet', 'team' => $team['Team']['id']),
+					array('alt' => __('Stat Sheet', true), 'title' => __('Stat Sheet', true)));
+		}
 	}
 
 	$has_numbers = false;
@@ -300,17 +346,15 @@ if (!empty($team['Team']['short_name'])) {
 			if ($i++ % 2 == 0) {
 				$class = ' class="altrow"';
 			}
+			$skill = Set::extract("/Skill[enabled=1][sport={$team['Division']['League']['sport']}]/.", $person);
 			if (in_array ($person['TeamsPerson']['role'], Configure::read('playing_roster_roles')) &&
 				$person['TeamsPerson']['status'] == ROSTER_APPROVED)
 			{
 				++ $roster_count;
-				$skill = Set::extract("/Skill[enabled=1][sport={$team['Division']['League']['sport']}]/.", $person);
 				if (!empty($skill)) {
 					++$skill_count;
 					$skill_total += $skill[0]['skill_level'];
 				}
-			} else {
-				$skill = null;
 			}
 
 			if ($is_logged_in) {

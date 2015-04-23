@@ -15,6 +15,10 @@ class RegistrationsController extends AppController {
 		return array('payment');
 	}
 
+	function freeActions() {
+		return array('show');
+	}
+
 	function isAuthorized() {
 		// Anyone that's logged in can perform these operations
 		if (in_array ($this->params['action'], array(
@@ -23,6 +27,7 @@ class RegistrationsController extends AppController {
 				'unregister',
 				'redeem',
 				'checkout',
+				'show',
 		)))
 		{
 			return true;
@@ -111,6 +116,10 @@ class RegistrationsController extends AppController {
 		return false;
 	}
 
+	function show() {
+		return $this->_showRegistration($this->_arg('person'));
+	}
+
 	function full_list() {
 		if (!ini_get('safe_mode')) { 
 			set_time_limit(1800);
@@ -188,32 +197,53 @@ class RegistrationsController extends AppController {
 		$event_obj = $this->_getComponent ('EventType', $event['EventType']['type'], $this);
 		$this->_mergeAutoQuestions ($event, $event_obj, $event['Questionnaire'], null, true);
 
-		$this->Registration->contain ('Person');
-		$gender = $this->Registration->find('all', array(
-				'fields' => array(
-					'Person.gender',
-					'COUNT(Registration.id) AS count',
-				),
-				'conditions' => array(
-					'Registration.event_id' => $id,
-					'Registration.payment !=' => 'Cancelled',
-				),
-				'group' => 'Person.gender',
-				'order' => array ('Person.gender' => 'DESC'),
-		));
+		// If the event is all male or all female, there's no point in including this
+		if ($event['Event']['cap_male'] != 0 && $event['Event']['cap_female'] != 0) {
+			$this->Registration->contain ('Person');
+			$gender = $this->Registration->find('all', array(
+					'fields' => array(
+						'Person.gender',
+						'COUNT(Registration.id) AS count',
+					),
+					'conditions' => array(
+						'Registration.event_id' => $id,
+						'Registration.payment !=' => 'Cancelled',
+					),
+					'group' => 'Person.gender',
+					'order' => array ('Person.gender' => 'DESC'),
+			));
+		}
 
-		$this->Registration->contain ();
-		$payment = $this->Registration->find('all', array(
-				'fields' => array(
-					'payment',
-					'COUNT(payment) AS count',
-				),
-				'conditions' => array(
-					'event_id' => $id,
-				),
-				'group' => 'payment',
-				'order' => 'payment',
-		));
+		// We need to include a gender breakdown of the payment statuses if both
+		// genders are allowed to register.
+		if (isset($gender)) {
+			$this->Registration->contain ('Person');
+			$payment = $this->Registration->find('all', array(
+					'fields' => array(
+						'Registration.payment',
+						'Person.gender',
+						'COUNT(Registration.payment) AS count',
+					),
+					'conditions' => array(
+						'Registration.event_id' => $id,
+					),
+					'group' => array('Registration.payment', 'Person.gender'),
+					'order' => array('Registration.payment', 'Person.gender' => 'DESC'),
+			));
+		} else {
+			$this->Registration->contain ();
+			$payment = $this->Registration->find('all', array(
+					'fields' => array(
+						'Registration.payment',
+						'COUNT(Registration.payment) AS count',
+					),
+					'conditions' => array(
+						'Registration.event_id' => $id,
+					),
+					'group' => 'Registration.payment',
+					'order' => 'Registration.payment',
+			));
+		}
 
 		$this->Registration->Response->contain ();
 		$responses = $this->Registration->Response->find('all', array(
@@ -1591,7 +1621,7 @@ class RegistrationsController extends AppController {
 
 			if (!$this->is_admin && !$this->is_manager) {
 				// Players cannot change their own payment status
-				unset($data['Registration']['payment']);
+				$data['Registration']['payment'] = $registration['Registration']['payment'];
 			}
 
 			if (!$this->Registration->save($data, array('validate' => false))) {
@@ -1599,11 +1629,9 @@ class RegistrationsController extends AppController {
 				return;
 			}
 
-			// If the payment status has changed, we may need to do extra processing
-			if ($this->is_admin || $this->is_manager) {
-				if (!$this->_postProcess($registration, $registration, $data, $registration['Registration']['payment'], $data['Registration']['payment'])) {
-					return;
-				}
+			// If the payment status has changed, or questionnaire answers updated, we may need to do extra processing
+			if (!$this->_postProcess($registration, $registration, $data, $registration['Registration']['payment'], $data['Registration']['payment'])) {
+				return;
 			}
 
 			if ($transaction->commit() !== false) {

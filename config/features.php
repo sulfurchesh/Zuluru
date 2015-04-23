@@ -22,6 +22,13 @@ if (!defined('GROUP_PLAYER')) {
 	define('GROUP_ADMIN', 7);
 }
 
+if (!defined('PROFILE_DISABLED')) {
+	define('PROFILE_DISABLED', 0);
+	define('PROFILE_USER_UPDATE', 1);
+	define('PROFILE_ADMIN_UPDATE', 2);
+	define('PROFILE_REGISTRATION', 3);
+}
+
 if (!defined('SEASON_GAME')) {
 	define('SEASON_GAME', 1);
 	define('POOL_PLAY_GAME', 2);
@@ -68,6 +75,7 @@ if (!defined('TEAM_NAME')) {
 	define('FRANCHISE_ID', -6);
 	define('FRANCHISE_ID_CREATED', -7);
 	define('TRACK_ATTENDANCE', -10);
+	define('SHIRT_SIZE', -20);
 }
 
 // Event connection types
@@ -82,6 +90,8 @@ if (!defined('VISIBILITY_PRIVATE')) {
 	define('VISIBILITY_CAPTAINS', 2);
 	define('VISIBILITY_TEAM', 3);
 	define('VISIBILITY_PUBLIC', 4);
+	define('VISIBILITY_ADMIN', 5);
+	define('VISIBILITY_COORDINATOR', 6);
 }
 
 if (!defined('BADGE_VISIBILITY_ADMIN')) {
@@ -104,7 +114,25 @@ if (!defined('TIE_BREAKER_HTH_HTHPM_PM_GF_LOSS')) {
 	define('TIE_BREAKER_PM_HTH_GF_LOSS', 4);
 	define('TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT', 5);
 	define('TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS', 6);
-        define('TIE_BREAKER_PM_GF_HTH', 7);
+	define('TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS', 7);
+	define('TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS_SPIRIT', 8);
+	define('TIE_BREAKER_CF_SPIRIT_HTH_HTHPM_PM_GF_LOSS', 9);
+	define('TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS', 10);
+	define('TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS_SPIRIT', 11);
+	define('TIE_BREAKER_SPIRIT_HTH_HTHPM_CF_PM_GF_LOSS', 12);
+	define('TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS', 13);
+	define('TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS_SPIRIT', 14);
+	define('TIE_BREAKER_SPIRIT_HTH_HTHPM_PM_GF_CF_LOSS', 15);
+	define('TIE_BREAKER_CF_PM_HTH_GF_LOSS', 16);
+	define('TIE_BREAKER_CF_PM_HTH_GF_LOSS_SPIRIT', 17);
+	define('TIE_BREAKER_SPIRIT_CF_PM_HTH_GF_LOSS', 18);
+	define('TIE_BREAKER_PM_CF_HTH_GF_LOSS', 19);
+	define('TIE_BREAKER_PM_CF_HTH_GF_LOSS_SPIRIT', 20);
+	define('TIE_BREAKER_SPIRIT_PM_CF_HTH_GF_LOSS', 21);
+	define('TIE_BREAKER_PM_HTH_CF_GF_LOSS', 22);
+	define('TIE_BREAKER_PM_HTH_CF_GF_LOSS_SPIRIT', 23);
+	define('TIE_BREAKER_SPIRIT_PM_HTH_CF_GF_LOSS', 24);
+	define('TIE_BREAKER_PM_GF_HTH', 25);
 }
 
 // Minimum "fake id" to use for setting edit pages
@@ -243,6 +271,8 @@ $config['visibility'] = array(
 	VISIBILITY_CAPTAINS => 'Captains',
 	VISIBILITY_TEAM => 'Team',
 	VISIBILITY_PUBLIC => 'Public',
+	VISIBILITY_ADMIN => 'Admins',
+	VISIBILITY_COORDINATOR => 'Coordinators',
 );
 
 // Percent likelihood that a notice will be shown, if there is one to show
@@ -286,7 +316,25 @@ $config['tie_breakers'] = array(
 	TIE_BREAKER_PM_HTH_GF_LOSS => array('pm', 'hth', 'gf', 'loss'),
 	TIE_BREAKER_PM_HTH_GF_LOSS_SPIRIT => array('pm', 'hth', 'gf', 'loss', 'spirit'),
 	TIE_BREAKER_SPIRIT_PM_HTH_GF_LOSS => array('spirit', 'pm', 'hth', 'gf', 'loss'),
-        TIE_BREAKER_PM_GF_HTH => array('pm', 'gf', 'hth'),
+	TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS => array('cf', 'hth', 'hthpm', 'pm', 'gf', 'loss'),
+	TIE_BREAKER_CF_HTH_HTHPM_PM_GF_LOSS_SPIRIT => array('cf', 'hth', 'hthpm', 'pm', 'gf', 'loss', 'spirit'),
+	TIE_BREAKER_CF_SPIRIT_HTH_HTHPM_PM_GF_LOSS => array('cf', 'spirit', 'hth', 'hthpm', 'pm', 'gf', 'loss'),
+	TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS => array('hth', 'hthpm', 'cf', 'pm', 'gf', 'loss'),
+	TIE_BREAKER_HTH_HTHPM_CF_PM_GF_LOSS_SPIRIT => array('hth', 'hthpm', 'cf', 'pm', 'gf', 'loss', 'spirit'),
+	TIE_BREAKER_SPIRIT_HTH_HTHPM_CF_PM_GF_LOSS => array('spirit', 'hth', 'hthpm', 'cf', 'pm', 'gf', 'loss'),
+	TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS => array('hth', 'hthpm', 'pm', 'gf', 'cf', 'loss'),
+	TIE_BREAKER_HTH_HTHPM_PM_GF_CF_LOSS_SPIRIT => array('hth', 'hthpm', 'pm', 'gf', 'cf', 'loss', 'spirit'),
+	TIE_BREAKER_SPIRIT_HTH_HTHPM_PM_GF_CF_LOSS => array('spirit', 'hth', 'hthpm', 'pm', 'gf', 'cf', 'loss'),
+	TIE_BREAKER_CF_PM_HTH_GF_LOSS => array('cf', 'pm', 'hth', 'gf', 'loss'),
+	TIE_BREAKER_CF_PM_HTH_GF_LOSS_SPIRIT => array('cf', 'pm', 'hth', 'gf', 'loss', 'spirit'),
+	TIE_BREAKER_SPIRIT_CF_PM_HTH_GF_LOSS => array('spirit', 'cf', 'pm', 'hth', 'gf', 'loss'),
+	TIE_BREAKER_PM_CF_HTH_GF_LOSS => array('pm', 'cf', 'hth', 'gf', 'loss'),
+	TIE_BREAKER_PM_CF_HTH_GF_LOSS_SPIRIT => array('pm', 'cf', 'hth', 'gf', 'loss', 'spirit'),
+	TIE_BREAKER_SPIRIT_PM_CF_HTH_GF_LOSS => array('spirit', 'pm', 'cf', 'hth', 'gf', 'loss'),
+	TIE_BREAKER_PM_HTH_CF_GF_LOSS => array('pm', 'hth', 'cf', 'gf', 'loss'),
+	TIE_BREAKER_PM_HTH_CF_GF_LOSS_SPIRIT => array('pm', 'hth', 'cf', 'gf', 'loss', 'spirit'),
+	TIE_BREAKER_SPIRIT_PM_HTH_CF_GF_LOSS => array('spirit', 'pm', 'hth', 'cf', 'gf', 'loss'),
+	TIE_BREAKER_PM_GF_HTH => array('pm', 'gf', 'hth'),
 );
 
 // MIME definitions for document types that CakePHP doesn't support
