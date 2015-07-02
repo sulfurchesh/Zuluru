@@ -108,8 +108,8 @@ class PeopleController extends AppController {
 			}
 
 			if (in_array ($this->params['action'], array(
-				'registrations',
-				'credits',
+				'approve_badge',
+				'delete_badge',
 			)))
 			{
 				// If a badge id is specified, check if we're a manager of that badge's affiliate
@@ -124,8 +124,8 @@ class PeopleController extends AppController {
 
 			if (in_array ($this->params['action'], array(
 				'waivers',
-				'approve_badge',
-				'delete_badge',
+				'registrations',
+				'credits',
 				'act_as',
 			)))
 			{
@@ -2287,7 +2287,7 @@ class PeopleController extends AppController {
 			$this->Session->setFlash(sprintf(__('Invalid %s', true), __('person', true)), 'default', array('class' => 'info'));
 			$this->redirect(array('controller' => 'badges', 'action' => 'index'));
 		}
-		if (Configure::read('feature.affiliates' && !in_array($badge['Badge']['affiliate_id'], Set::extract('/Affiliate/id', $person)))) {
+		if (Configure::read('feature.affiliates') && !in_array($badge['Badge']['affiliate_id'], Set::extract('/Affiliate/id', $person))) {
 			$this->Session->setFlash(__('That person is not a member of this affiliate.', true), 'default', array('class' => 'info'));
 			$this->redirect(array('controller' => 'badges', 'action' => 'index'));
 		}
