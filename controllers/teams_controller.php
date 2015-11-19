@@ -589,8 +589,8 @@ class TeamsController extends AppController {
 		$no_scores = $this->Team->Division->Game->find('all', array(
 				'fields' => array(
 					'Game.division_id',
-					'IF(Game.approved_by = ' . APPROVAL_AUTOMATIC_HOME . ',HomeTeam.id,AwayTeam.id) AS id',
-					'IF(Game.approved_by = ' . APPROVAL_AUTOMATIC_HOME . ',HomeTeam.name,AwayTeam.name) AS name',
+					'IF(Game.approved_by = ' . APPROVAL_AUTOMATIC_AWAY . ',HomeTeam.id,AwayTeam.id) AS id',
+					'IF(Game.approved_by = ' . APPROVAL_AUTOMATIC_AWAY . ',HomeTeam.name,AwayTeam.name) AS name',
 					'COUNT(Game.id) AS count',
 				),
 				'joins' => array(
@@ -792,6 +792,7 @@ class TeamsController extends AppController {
 						'conditions' => array('Team.id !=' => $id),
 					),
 					'Waiver',
+					'Upload',
 				));
 				$full_person = $this->Team->Person->read(null, $person['id']);
 
@@ -2743,6 +2744,7 @@ class TeamsController extends AppController {
 					'Team' => $this->UserCache->read('Teams', $person['Person']['id']),
 					'Registration' => $this->UserCache->read('RegistrationsReserved', $person['Person']['id']),
 					'Waiver' => $this->UserCache->read('Waivers', $person['Person']['id']),
+					'Upload' => $this->UserCache->read('Documents', $person['Person']['id']),
 				);
 			}
 			if (!$this->can_add_rule_obj->evaluate($team['Division']['League']['affiliate_id'], $person, $team, $strict, $text_reason, true, $absolute_url)) {
